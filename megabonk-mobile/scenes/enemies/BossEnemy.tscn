@@ -16,8 +16,9 @@ roughness = 0.7
 radius = 1.0
 height = 4.0
 
-[sub_resource type="SphereShape3D" id="SphereShape3D_attack_boss"]
-radius = 2.0
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_attack_boss"]
+radius = 1.25
+height = 4.0
 
 [node name="BossEnemy" instance=ExtResource("1_base")]
 script = ExtResource("2_script")
@@ -48,4 +49,4 @@ max_speed = 2.5
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
 
 [node name="CollisionShape3D" parent="AttackRange" index="0"]
-shape = SubResource("SphereShape3D_attack_boss")
+shape = SubResource("CapsuleShape3D_attack_boss")

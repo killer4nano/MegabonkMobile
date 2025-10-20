@@ -15,8 +15,11 @@ var has_hit: bool = false
 
 func _ready() -> void:
 	# Set up collision layers (enemy projectile)
-	collision_layer = 4  # Layer 3
-	collision_mask = 1   # Hits player (layer 1)
+	collision_layer = 4  # Layer 3 (enemy projectile)
+	collision_mask = 4   # Hits player (layer 3)
+
+	# Add to group for testing/tracking
+	add_to_group("enemy_projectiles")
 
 	# Connect body entered signal
 	body_entered.connect(_on_body_entered)

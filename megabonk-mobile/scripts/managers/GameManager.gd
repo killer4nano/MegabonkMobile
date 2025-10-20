@@ -5,6 +5,8 @@ var player: PlayerController
 var virtual_joystick: VirtualJoystick
 var camera_control: CameraControl
 var wave_manager: Node
+var jump_button: Control
+var space_was_pressed: bool = false  # Track previous frame's spacebar state
 
 func _ready() -> void:
 	# Find player and joystick in the scene
@@ -13,6 +15,7 @@ func _ready() -> void:
 	player = get_tree().get_first_node_in_group("player")
 	virtual_joystick = get_tree().get_first_node_in_group("virtual_joystick")
 	camera_control = get_tree().get_first_node_in_group("camera_control")
+	jump_button = get_tree().get_first_node_in_group("jump_button")
 	wave_manager = get_node_or_null("../WaveManager")
 
 	if not player:
@@ -24,6 +27,9 @@ func _ready() -> void:
 	if not camera_control:
 		push_warning("No camera control found in scene!")
 
+	if not jump_button:
+		push_warning("No jump button found in scene!")
+
 	if not wave_manager:
 		push_warning("No wave manager found in scene!")
 
@@ -32,6 +38,11 @@ func _ready() -> void:
 		var camera_pivot = player.get_node_or_null("CameraArm")
 		if camera_pivot:
 			camera_control.set_camera_pivot(camera_pivot)
+
+	# Connect jump button to player
+	if jump_button and player:
+		jump_button.jump_pressed.connect(func(): player.set_jump_input(true))
+		print("Jump button connected to player")
 
 	# Apply character data to player
 	if player:
@@ -47,6 +58,7 @@ func _ready() -> void:
 	print("Player found: ", player != null)
 	print("Virtual joystick found: ", virtual_joystick != null)
 	print("Camera control found: ", camera_control != null)
+	print("Jump button found: ", jump_button != null)
 	print("Wave manager found: ", wave_manager != null)
 
 	# Start the run (enables run time tracking and extraction system)
@@ -82,6 +94,12 @@ func _process(_delta: float) -> void:
 	var final_input := joystick_input if joystick_input.length() > 0 else keyboard_input
 
 	player.set_movement_input(final_input)
+
+	# Handle jump input (Spacebar for keyboard) - Only trigger on key press, not hold
+	var space_pressed = Input.is_physical_key_pressed(KEY_SPACE)
+	if space_pressed and not space_was_pressed:  # Just pressed this frame
+		player.set_jump_input(true)
+	space_was_pressed = space_pressed
 
 
 # Wave callbacks for displaying progress

@@ -41,6 +41,10 @@ var target_player: CharacterBody3D = null
 var path_update_timer: float = 0.0
 var can_attack: bool = false
 
+# Attack cooldown system (prevents spam damage on contact)
+var attack_cooldown: float = 1.0  # 1 second between attacks
+var attack_timer: float = 0.0
+
 # Status effects
 var is_slowed: bool = false
 var slow_multiplier: float = 1.0
@@ -202,6 +206,8 @@ func _physics_process(delta: float) -> void:
 		landing_timer -= delta
 	if bounce_prevention_timer > 0:
 		bounce_prevention_timer -= delta
+	if attack_timer > 0:
+		attack_timer -= delta
 
 	# === STUCK DETECTION ===
 	detect_stuck_state(delta)
@@ -480,8 +486,9 @@ func _on_attack_range_entered(body: Node3D) -> void:
 	if body == target_player:
 		can_attack = true
 		print("Player entered attack range!")
-		# Perform attack
-		attack_player()
+		# Perform attack if cooldown ready
+		if attack_timer <= 0.0:
+			attack_player()
 
 func _on_attack_range_exited(body: Node3D) -> void:
 	"""Called when something exits the attack range"""
@@ -494,13 +501,17 @@ func attack_player() -> void:
 	if not is_alive or not target_player:
 		return
 
+	# Check attack cooldown
+	if attack_timer > 0.0:
+		return  # Still on cooldown
+
 	# Deal damage to player (pass self as attacker for thorns)
 	if target_player.has_method("take_damage"):
 		target_player.take_damage(damage, self)
 		print("Enemy attacked player for ", damage, " damage!")
 
-	# TODO: Add attack cooldown to prevent continuous damage
-	# For now, this will trigger every time player enters range
+		# Start attack cooldown
+		attack_timer = attack_cooldown
 
 func get_health_percent() -> float:
 	"""Returns health as a percentage (0.0 to 1.0)"""

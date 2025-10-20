@@ -1,7 +1,8 @@
-[gd_scene load_steps=3 format=3 uid="uid://bvxqvw7vm3qxc"]
+[gd_scene load_steps=4 format=3 uid="uid://bvxqvw7vm3qxc"]
 
 [ext_resource type="Script" path="res://scripts/ui/VirtualJoystick.gd" id="1_joystick"]
 [ext_resource type="Script" path="res://scripts/ui/CameraControl.gd" id="2_camera"]
+[ext_resource type="Script" path="res://scripts/ui/JumpButton.gd" id="3_jump"]
 
 [node name="TouchControls" type="CanvasLayer"]
 
@@ -28,3 +29,19 @@ offset_right = 250.0
 offset_bottom = -50.0
 grow_vertical = 0
 script = ExtResource("1_joystick")
+
+[node name="JumpButton" type="Control" parent="." groups=["jump_button"]]
+z_index = 10
+layout_mode = 3
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -150.0
+offset_top = -200.0
+offset_right = -50.0
+offset_bottom = -100.0
+grow_horizontal = 0
+grow_vertical = 0
+script = ExtResource("3_jump")

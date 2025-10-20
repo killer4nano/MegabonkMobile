@@ -13,8 +13,9 @@ albedo_color = Color(0.8, 0.2, 0.2, 1)
 radius = 0.5
 height = 2.0
 
-[sub_resource type="SphereShape3D" id="SphereShape3D_attack_basic"]
-radius = 1.5
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_attack_basic"]
+radius = 0.75
+height = 2.0
 
 [node name="BasicEnemy" instance=ExtResource("1_base")]
 max_health = 50.0
@@ -33,4 +34,4 @@ shape = SubResource("CapsuleShape3D_basic")
 max_speed = 3.0
 
 [node name="CollisionShape3D" parent="AttackRange" index="0"]
-shape = SubResource("SphereShape3D_attack_basic")
+shape = SubResource("CapsuleShape3D_attack_basic")

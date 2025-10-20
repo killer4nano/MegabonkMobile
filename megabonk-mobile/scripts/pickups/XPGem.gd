@@ -40,9 +40,9 @@ func _ready() -> void:
 	set_gem_color_by_value()
 
 	# Set collision layers
-	# Layer 3 for pickups, Mask 1 for player detection
-	collision_layer = 4  # Layer 3 (bit 2)
-	collision_mask = 1   # Layer 1 (bit 0)
+	# Layer 5 for pickups, Mask layer 3 for player detection
+	collision_layer = 16  # Layer 5 (pickups)
+	collision_mask = 4   # Layer 3 (player)
 
 	# Connect area signals for collection
 	body_entered.connect(_on_body_entered)

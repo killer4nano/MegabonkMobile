@@ -232,15 +232,24 @@ func _start_repositioning() -> void:
 
 	print("RangedEnemy: Repositioning to get line of sight (blocked by obstacle)")
 
-func attack_player() -> void:
-	"""Override base attack - ranged enemy uses projectiles, but can still deal contact damage"""
-	if not is_alive or not target_player:
-		return
+func _on_attack_range_entered(body: Node3D) -> void:
+	"""Override base attack range - ranged enemy should NOT deal instant damage on range entry"""
+	if body == target_player:
+		# Player entered shooting range - the charging/shooting logic will handle attacks
+		# DO NOT call attack_player() here like the base enemy does
+		print("RangedEnemy: Player entered shooting range (8m)")
 
-	# Deal contact damage to player if they touch us
-	if target_player.has_method("take_damage"):
-		target_player.take_damage(damage, self)
-		print("RangedEnemy dealt contact damage: ", damage)
+func _on_attack_range_exited(body: Node3D) -> void:
+	"""Called when player leaves attack range"""
+	if body == target_player:
+		print("RangedEnemy: Player left shooting range")
+
+func attack_player() -> void:
+	"""Override base attack - ranged enemy uses projectiles only, NO contact damage"""
+	# Ranged enemies should NEVER deal contact damage
+	# They only damage through projectiles
+	# This method is intentionally empty to prevent contact damage
+	pass
 
 func _create_charge_indicator() -> void:
 	"""BUG FIX: TASK-004 - Create visual telegraph indicator for attack windup"""

@@ -11,8 +11,8 @@ roughness = 0.2
 radius = 0.3
 
 [node name="GoldCoin" type="Area3D"]
-collision_layer = 8
-collision_mask = 1
+collision_layer = 16
+collision_mask = 4
 script = ExtResource("1_1n5g2")
 
 [node name="Mesh" type="MeshInstance3D" parent="."]

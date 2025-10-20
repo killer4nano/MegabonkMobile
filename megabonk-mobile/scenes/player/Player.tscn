@@ -14,6 +14,8 @@ height = 1.8
 radius = 3.0
 
 [node name="Player" type="CharacterBody3D"]
+collision_layer = 4
+collision_mask = 3
 script = ExtResource("1_wr5hl")
 
 [node name="Body" type="MeshInstance3D" parent="."]
@@ -36,8 +38,8 @@ script = ExtResource("2_weapon_mgr")
 [node name="BonkHammer" parent="WeaponManager" instance=ExtResource("3_bonk_hammer")]
 
 [node name="PlayerPickupArea" type="Area3D" parent="."]
-collision_layer = 1
-collision_mask = 4
+collision_layer = 0
+collision_mask = 16
 monitorable = false
 
 [node name="PickupCollisionShape" type="CollisionShape3D" parent="PlayerPickupArea"]

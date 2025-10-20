@@ -13,8 +13,9 @@ albedo_color = Color(0.3, 0.2, 0.6, 1)
 radius = 0.7
 height = 2.5
 
-[sub_resource type="SphereShape3D" id="SphereShape3D_attack_tank"]
-radius = 1.5
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_attack_tank"]
+radius = 0.95
+height = 2.5
 
 [node name="TankEnemy" instance=ExtResource("1_base")]
 max_health = 150.0
@@ -33,4 +34,4 @@ shape = SubResource("CapsuleShape3D_tank")
 max_speed = 1.5
 
 [node name="CollisionShape3D" parent="AttackRange" index="0"]
-shape = SubResource("SphereShape3D_attack_tank")
+shape = SubResource("CapsuleShape3D_attack_tank")
