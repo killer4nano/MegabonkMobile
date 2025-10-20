@@ -23,6 +23,10 @@ const GOLD_COIN_SCENE = preload("res://scenes/pickups/GoldCoin.tscn")
 @export_group("Movement")
 @export var acceleration: float = 10.0
 @export var rotation_speed: float = 8.0
+@export var climb_speed: float = 3.0  # Base speed when climbing obstacles - reduced from 8.0 for realism
+
+# Use project gravity for consistency
+var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
 
 # Signals
 signal enemy_died(xp_value: float)
@@ -63,6 +67,19 @@ var force_direct_movement: bool = false
 var force_direct_movement_timer: float = 0.0
 var force_direct_movement_duration: float = 3.0  # Use direct movement for 3s after teleport
 
+# Climbing system
+var is_climbing: bool = false
+var climb_target_height: float = 0.0
+var obstacle_check_ray: RayCast3D  # Forward ray to detect walls
+var ground_check_ray: RayCast3D  # Downward ray to check ground
+var top_check_ray: RayCast3D  # Upper forward ray to check if we can climb over
+var stuck_timer: float = 0.0  # Track if enemy is stuck
+var last_position: Vector3  # Track position to detect stuck state
+var climb_cooldown: float = 0.0  # Prevent immediate re-climbing after landing
+var landing_timer: float = 0.0  # Time to stabilize after climbing
+var edge_clear_mode: bool = false  # Special mode for clearing edges
+var bounce_prevention_timer: float = 0.0  # Prevent oscillation at edges
+
 # References
 @onready var nav_agent: NavigationAgent3D = $NavigationAgent3D
 @onready var attack_area: Area3D = $AttackRange
@@ -74,6 +91,45 @@ func _ready() -> void:
 
 	# Add to enemies group for weapon targeting
 	add_to_group("enemies")
+
+	# Initialize climbing detection
+	last_position = global_position
+
+	# Setup obstacle detection raycasts for climbing system
+	# Forward ray at waist height to detect walls
+	obstacle_check_ray = RayCast3D.new()
+	add_child(obstacle_check_ray)
+	obstacle_check_ray.position = Vector3(0, 0.5, 0)  # Waist height
+	obstacle_check_ray.target_position = Vector3(0, 0, -1.0)  # Check 1m forward
+	obstacle_check_ray.enabled = true
+	obstacle_check_ray.collision_mask = 1  # Only collide with layer 1 (environment/static bodies)
+	obstacle_check_ray.exclude_parent = true  # Don't detect self
+	obstacle_check_ray.debug_shape_custom_color = Color.RED
+	obstacle_check_ray.debug_shape_thickness = 5
+	if OS.is_debug_build():
+		obstacle_check_ray.visible = true  # Show debug shape in debug builds
+
+	# Upper ray to check if there's space to climb over
+	top_check_ray = RayCast3D.new()
+	add_child(top_check_ray)
+	top_check_ray.position = Vector3(0, 2.0, 0)  # Above enemy height
+	top_check_ray.target_position = Vector3(0, 0, -1.0)  # Check 1m forward
+	top_check_ray.enabled = true
+	top_check_ray.collision_mask = 1  # Only layer 1
+	top_check_ray.exclude_parent = true
+	top_check_ray.debug_shape_custom_color = Color.GREEN
+	top_check_ray.debug_shape_thickness = 3
+
+	# Ground check ray
+	ground_check_ray = RayCast3D.new()
+	add_child(ground_check_ray)
+	ground_check_ray.position = Vector3(0, 0.1, 0)  # Slightly above feet
+	ground_check_ray.target_position = Vector3(0, -2.0, 0)  # Check 2m down
+	ground_check_ray.enabled = true
+	ground_check_ray.collision_mask = 1  # Only layer 1
+	ground_check_ray.exclude_parent = true
+	ground_check_ray.debug_shape_custom_color = Color.YELLOW
+	ground_check_ray.debug_shape_thickness = 3
 
 	# Make material unique so damage flash doesn't affect all enemies
 	var body = get_node_or_null("Body")
@@ -139,6 +195,32 @@ func _physics_process(delta: float) -> void:
 	# === ENEMY-SPECIFIC BEHAVIOR (override in subclasses) ===
 	_process_enemy_behavior(delta)
 
+	# === COOLDOWN UPDATES ===
+	if climb_cooldown > 0:
+		climb_cooldown -= delta
+	if landing_timer > 0:
+		landing_timer -= delta
+	if bounce_prevention_timer > 0:
+		bounce_prevention_timer -= delta
+
+	# === STUCK DETECTION ===
+	detect_stuck_state(delta)
+
+	# === PROXIMITY CLIMBING CHECK ===
+	# Always check for climbing opportunities when player is above
+	if not is_climbing and target_player and climb_cooldown <= 0:
+		var to_player = target_player.global_position - global_position
+		var horizontal_dist = Vector2(to_player.x, to_player.z).length()
+
+		# If player is above us at ANY distance within detection range
+		if horizontal_dist < detection_range and to_player.y > 2.0:
+			# Force check for obstacles
+			var check_dir = Vector3(to_player.x, 0, to_player.z).normalized()
+			check_for_obstacle_ahead(check_dir)
+
+	# === CLIMBING & GRAVITY ===
+	handle_climbing_and_gravity(delta)
+
 	# === MOVEMENT APPLICATION ===
 	move_and_slide()
 
@@ -168,13 +250,23 @@ func _process_enemy_behavior(delta: float) -> void:
 		velocity = velocity.lerp(Vector3.ZERO, acceleration * delta)
 		return
 
-	# VERIFIED FIX: Always use direct movement (like RangedEnemy)
-	# NavigationAgent3D enters corrupted state after teleport, causing jitter
-	# Direct movement recalculates direction to player every frame - always smooth
-	handle_direct_movement(delta)
+	# PROACTIVE CLIMBING CHECK - Always check for obstacles toward player
+	if target_player and not is_climbing and climb_cooldown <= 0:
+		var distance_to_player = global_position.distance_to(target_player.global_position)
+		# Check at any distance within detection range
+		if distance_to_player <= detection_range:
+			var to_player = global_position.direction_to(target_player.global_position)
+			to_player.y = 0
+			if to_player.length() > 0.1:
+				to_player = to_player.normalized()
+				# Always check if there's an obstacle between us and player
+				check_for_obstacle_ahead(to_player)
 
-	# Rotate to face movement direction
-	if velocity.length() > 0.1:
+	# Use handle_movement which already decides between direct and navigation
+	handle_movement(delta)
+
+	# Rotate to face movement direction (only if not climbing)
+	if not is_climbing and velocity.length() > 0.1:
 		var target_direction = velocity.normalized()
 		var target_rotation = atan2(target_direction.x, target_direction.z)
 		rotation.y = lerp_angle(rotation.y, target_rotation, rotation_speed * delta)
@@ -199,6 +291,16 @@ func handle_movement(delta: float) -> void:
 		handle_direct_movement(delta)
 		return
 
+	# Don't handle normal movement if climbing - let climbing system handle it
+	if is_climbing:
+		return
+
+	# During landing phase, reduce horizontal movement
+	if landing_timer > 0:
+		velocity.x *= 0.5
+		velocity.z *= 0.5
+		return
+
 	# Normal navigation-based movement for slower enemies
 	if nav_agent.is_navigation_finished():
 		# Reached destination or path invalid
@@ -208,13 +310,25 @@ func handle_movement(delta: float) -> void:
 	# Get next position in path
 	var next_path_position = nav_agent.get_next_path_position()
 	var direction = global_position.direction_to(next_path_position)
+
+	# Check for obstacles ahead and initiate climbing if needed
+	check_for_obstacle_ahead(direction)
+
+	# CRITICAL: If climbing just started, don't apply navigation movement
+	if is_climbing:
+		return
+
+	# Normal ground movement
 	direction.y = 0  # Keep movement on ground plane
 	direction = direction.normalized()
 
 	# Accelerate toward target direction (apply slow effect)
 	var effective_speed = move_speed * slow_multiplier
 	var target_velocity = direction * effective_speed
-	velocity = velocity.lerp(target_velocity, acceleration * delta)
+
+	# Only apply horizontal velocity
+	velocity.x = lerp(velocity.x, target_velocity.x, acceleration * delta)
+	velocity.z = lerp(velocity.z, target_velocity.z, acceleration * delta)
 
 func handle_direct_movement(delta: float) -> void:
 	"""Direct movement for fast enemies (bypasses navigation to prevent jittering)"""
@@ -222,17 +336,39 @@ func handle_direct_movement(delta: float) -> void:
 		velocity = velocity.lerp(Vector3.ZERO, acceleration * delta)
 		return
 
+	# Don't handle normal movement if climbing - let climbing system handle it
+	if is_climbing:
+		return
+
+	# During landing phase, reduce horizontal movement
+	if landing_timer > 0:
+		velocity.x *= 0.5
+		velocity.z *= 0.5
+		return
+
 	# Direct movement toward player - no NavigationAgent3D, no pathfinding
 	var direction = global_position.direction_to(target_player.global_position)
+
+	# Check for obstacles ahead and initiate climbing if needed
+	check_for_obstacle_ahead(direction)
+
+	# CRITICAL: If climbing just started, don't apply movement
+	if is_climbing:
+		return
+
+	# Normal ground movement
 	direction.y = 0  # Keep on ground plane
 	direction = direction.normalized()
 
 	# Set velocity directly toward player (apply slow effect)
 	var effective_speed = move_speed * slow_multiplier
 	var target_velocity = direction * effective_speed
-	velocity = velocity.lerp(target_velocity, acceleration * delta)
 
-	# Rotate to face movement direction (overrides rotation in _physics_process)
+	# Only apply horizontal velocity
+	velocity.x = lerp(velocity.x, target_velocity.x, acceleration * delta)
+	velocity.z = lerp(velocity.z, target_velocity.z, acceleration * delta)
+
+	# Rotate to face movement direction
 	if velocity.length() > 0.1:
 		var angle = atan2(direction.x, direction.z)
 		rotation.y = lerp_angle(rotation.y, angle, rotation_speed * delta)
@@ -502,3 +638,317 @@ func _create_explosion(damage: float, radius: float) -> void:
 				print("  Explosion hit enemy at distance ", distance)
 
 	# TODO: Visual explosion effect (particle system)
+
+# ============================================================================
+# CLIMBING SYSTEM
+# ============================================================================
+
+func check_for_obstacle_ahead(movement_direction: Vector3) -> void:
+	"""Check for obstacles in movement direction and initiate climbing if needed"""
+	if not obstacle_check_ray or is_climbing:
+		return
+
+	# More lenient cooldown check - only block if very recent
+	if climb_cooldown > 1.5:  # Only block first 0.5s of 2s cooldown
+		return
+
+	# Get movement direction - use player direction if not moving much
+	var forward_dir: Vector3
+	if movement_direction.length() > 0.1:
+		forward_dir = Vector3(movement_direction.x, 0, movement_direction.z).normalized()
+	elif target_player:
+		# Even if not moving, check toward player
+		forward_dir = global_position.direction_to(target_player.global_position)
+		forward_dir.y = 0
+		forward_dir = forward_dir.normalized()
+	else:
+		return  # No direction to check
+
+	# Multiple detection heights and ranges for better coverage
+	var detection_configs = [
+		{"height": 0.2, "range": 1.0},  # Low and far
+		{"height": 0.5, "range": 0.8},  # Mid and medium
+		{"height": 0.8, "range": 0.6},  # High and close
+	]
+
+	for config in detection_configs:
+		obstacle_check_ray.position = Vector3(0, config.height, 0)
+		obstacle_check_ray.target_position = forward_dir * config.range
+		obstacle_check_ray.force_raycast_update()
+
+		if obstacle_check_ray.is_colliding():
+			var collider = obstacle_check_ray.get_collider()
+
+			# Only climb static obstacles
+			if collider is StaticBody3D:
+				# Don't climb on player or enemies
+				if collider.is_in_group("player") or collider.is_in_group("enemies"):
+					continue
+
+				# Don't climb the ground
+				if "Ground" in collider.name or "ground" in collider.name:
+					continue
+
+				# More lenient angle check - just needs to be somewhat facing
+				var collision_normal = obstacle_check_ray.get_collision_normal()
+				var dot = collision_normal.dot(-forward_dir)
+				if dot < 0.3:  # Much more lenient - 0.3 instead of 0.5
+					continue
+
+				# We hit a climbable obstacle!
+				var obstacle_height = find_obstacle_top(forward_dir)
+
+				if obstacle_height > 0.3:  # Lower minimum (was 0.5)
+					start_climbing(obstacle_height)
+					# print("[CLIMB DETECT] ", name, " climbing ", collider.name, " (", obstacle_height, "m) at height check ", config.height)
+					return  # Successfully started climbing
+
+func find_obstacle_top(forward_dir: Vector3) -> float:
+	"""Find the top of the obstacle by casting rays upward"""
+	var space_state = get_world_3d().direct_space_state
+	var max_check_height = 50.0  # Check up to 50m high
+	var step = 0.5  # Check every 0.5m
+	var current_height = 0.5
+	var obstacle_top = 0.0
+	var last_hit_height = 0.0
+
+	# Start from bottom and work our way up
+	while current_height < max_check_height:
+		# Cast ray forward at this height
+		var ray_origin = global_position + Vector3(0, current_height, 0)
+		var ray_end = ray_origin + forward_dir * 1.0  # Check 1m ahead
+
+		var query = PhysicsRayQueryParameters3D.create(ray_origin, ray_end)
+		query.collision_mask = 1  # Environment layer
+		query.exclude = [self]  # Exclude self from collision
+		var result = space_state.intersect_ray(query)
+
+		if not result.is_empty():
+			# Still hitting obstacle at this height
+			last_hit_height = current_height
+		else:
+			# No collision at this height - we found the top!
+			if last_hit_height > 0:
+				obstacle_top = last_hit_height + 0.5  # Add a bit extra to ensure we clear it
+				break
+
+		current_height += step
+
+	# If we're still hitting something at max height, climb anyway
+	if obstacle_top == 0.0 and last_hit_height > 0:
+		obstacle_top = min(last_hit_height + 1.0, max_check_height)
+
+	return obstacle_top
+
+func start_climbing(obstacle_height: float) -> void:
+	"""Start climbing over an obstacle"""
+	is_climbing = true
+	# Add extra height to ensure we clear the obstacle
+	# 1.5m extra to account for collision box and ensure clearance
+	climb_target_height = global_position.y + obstacle_height + 1.5
+
+	# Visual feedback - change color when climbing
+	_set_climbing_visual(true)
+
+	# Stop current movement to start climbing
+	velocity = Vector3.ZERO
+
+func detect_stuck_state(delta: float) -> void:
+	"""Detect if enemy is stuck and should climb"""
+	if is_climbing or not target_player:
+		stuck_timer = 0.0
+		last_position = global_position
+		return
+
+	# Don't reset timer for cooldowns - still track if stuck
+	var distance_moved = global_position.distance_to(last_position)
+	var distance_to_player = global_position.distance_to(target_player.global_position)
+
+	# More aggressive stuck detection - works at any distance
+	# Check if we're not making progress
+	if distance_to_player > 1.5:  # Reduced from 3.0 - check almost always
+		if distance_moved < 0.1:  # Very little movement
+			stuck_timer += delta
+		elif distance_moved < 0.3:  # Some movement but not much
+			stuck_timer += delta * 0.5  # Accumulate slower
+		else:
+			stuck_timer = max(0, stuck_timer - delta)  # Reduce slowly if moving
+
+		# Much faster stuck detection - 0.5 seconds instead of 1.0
+		if stuck_timer > 0.5:
+			# Check multiple directions for obstacles
+			var directions_to_check = [
+				velocity.normalized() if velocity.length() > 0.1 else Vector3.ZERO,
+				global_position.direction_to(target_player.global_position),
+				-transform.basis.z,  # Forward direction
+			]
+
+			for check_dir in directions_to_check:
+				if check_dir == Vector3.ZERO:
+					continue
+
+				var forward_dir = Vector3(check_dir.x, 0, check_dir.z).normalized()
+
+				# Cast at multiple heights
+				for height in [0.2, 0.5, 0.8]:
+					obstacle_check_ray.position = Vector3(0, height, 0)
+					obstacle_check_ray.target_position = forward_dir * 1.0
+					obstacle_check_ray.force_raycast_update()
+
+					if obstacle_check_ray.is_colliding():
+						var collider = obstacle_check_ray.get_collider()
+						if collider is StaticBody3D and not "Ground" in collider.name:
+							var obstacle_height = find_obstacle_top(forward_dir)
+							if obstacle_height > 0.3:
+								start_climbing(obstacle_height)
+								# print("[STUCK FIX] ", name, " auto-climbing after stuck for ", stuck_timer, "s")
+								stuck_timer = 0.0
+								last_position = global_position
+								return
+
+			# If still stuck after checking, try a small random movement
+			if stuck_timer > 1.0:
+				velocity.x += randf_range(-1, 1)
+				velocity.z += randf_range(-1, 1)
+				stuck_timer = 0.5  # Reset partially
+
+	last_position = global_position
+
+func handle_climbing_and_gravity(delta: float) -> void:
+	"""Handle climbing movement and gravity"""
+	if is_climbing:
+		var current_y = global_position.y
+		var height_remaining = climb_target_height - current_y
+
+		# Detect if we're stuck bouncing
+		if bounce_prevention_timer <= 0 and velocity.y < -2.0 and height_remaining < 2.0 and height_remaining > -1.0:
+			# We're falling while near the top - likely bouncing
+			# print("[BOUNCE FIX] Detected bounce, forcing edge clear")
+			edge_clear_mode = true
+			bounce_prevention_timer = 1.0
+			velocity.y = 2.0  # Force upward
+
+		# Phase 1: Vertical climb (until near top)
+		if height_remaining > 2.0 and not edge_clear_mode:
+			# Scale climb speed based on total height - reduced multipliers for realism
+			var total_height = climb_target_height - (global_position.y - height_remaining)
+			var speed_multiplier = 1.0
+			if total_height > 10.0:
+				speed_multiplier = 1.2  # Was 1.5
+			if total_height > 20.0:
+				speed_multiplier = 1.4  # Was 2.0
+
+			# Strong vertical movement
+			velocity.y = climb_speed * speed_multiplier
+
+			# Small forward to stay on wall
+			if target_player:
+				var direction = global_position.direction_to(target_player.global_position)
+				direction.y = 0
+				direction = direction.normalized()
+				velocity.x = direction.x * 0.3
+				velocity.z = direction.z * 0.3
+
+		# Phase 2: Edge approach (getting ready to clear)
+		elif height_remaining > 0 and not edge_clear_mode:
+			# Enable edge clear mode
+			edge_clear_mode = true
+			# print("[CLIMB] Entering edge clear mode")
+
+			# Moderate vertical with forward momentum building
+			velocity.y = climb_speed * 0.4
+
+			if target_player:
+				var direction = global_position.direction_to(target_player.global_position)
+				direction.y = 0
+				direction = direction.normalized()
+				velocity.x = lerp(velocity.x, direction.x * move_speed, 5.0 * delta)
+				velocity.z = lerp(velocity.z, direction.z * move_speed, 5.0 * delta)
+
+		# Phase 3: Edge clear mode - aggressive forward push
+		elif edge_clear_mode or height_remaining > -3.0:
+			edge_clear_mode = true
+
+			# Fight gravity while pushing forward
+			velocity.y = 1.5  # Reduced from 2.0 for more realistic movement
+
+			# Get forward direction
+			var forward_dir: Vector3
+			if target_player:
+				forward_dir = global_position.direction_to(target_player.global_position)
+				forward_dir.y = 0
+				forward_dir = forward_dir.normalized()
+			else:
+				forward_dir = -transform.basis.z
+
+			# Strong forward movement to clear edge (reduced from 4x)
+			var forward_speed = move_speed * 2.5  # Reduced from 4.0 for realism
+			velocity.x = forward_dir.x * forward_speed
+			velocity.z = forward_dir.z * forward_speed
+
+			# Check if we've cleared the obstacle (moved forward enough)
+			# Use raycasts to check if there's still a wall in front
+			if obstacle_check_ray:
+				obstacle_check_ray.target_position = forward_dir * 0.3
+				obstacle_check_ray.force_raycast_update()
+
+				if not obstacle_check_ray.is_colliding() and height_remaining < 0:
+					# We've cleared it!
+					edge_clear_mode = false
+					is_climbing = false
+					velocity.y = -5.0
+					climb_cooldown = 2.0
+					landing_timer = 1.0
+					bounce_prevention_timer = 0.5
+					# print("[CLIMB DONE] Successfully cleared edge")
+					_set_climbing_visual(false)
+					stuck_timer = 0.0
+
+		else:
+			# Fallback - definitely over
+			edge_clear_mode = false
+			is_climbing = false
+			velocity.y = -5.0
+			climb_cooldown = 2.0
+			landing_timer = 1.0
+			# print("[CLIMB DONE] ", name)
+			_set_climbing_visual(false)
+			stuck_timer = 0.0
+	else:
+		# Reset edge clear mode when not climbing
+		edge_clear_mode = false
+
+		# Landing phase - apply stronger gravity to get down from obstacles
+		if landing_timer > 0 and not is_on_floor():
+			velocity.y = -10.0  # Strong downward force during landing
+			# Keep some forward momentum during landing
+			if velocity.x != 0 or velocity.z != 0:
+				var horizontal_vel = Vector3(velocity.x, 0, velocity.z).normalized()
+				velocity.x = horizontal_vel.x * move_speed
+				velocity.z = horizontal_vel.z * move_speed
+		# Normal gravity application
+		elif not is_on_floor():
+			velocity.y -= gravity * delta
+			velocity.y = max(velocity.y, -20.0)  # Terminal velocity
+		else:
+			# Stop downward velocity when on floor
+			if velocity.y < 0:
+				velocity.y = 0
+
+func _set_climbing_visual(climbing: bool) -> void:
+	"""Visual feedback for climbing state"""
+	var body = get_node_or_null("Body")
+	if body and body is MeshInstance3D:
+		var mat = body.get_surface_override_material(0)
+		if mat:
+			if climbing:
+				# Make enemy blue when climbing
+				mat.albedo_color = Color(0.2, 0.2, 0.8, 1.0)
+			else:
+				# Reset to original color based on enemy type
+				if self.name.contains("Fast"):
+					mat.albedo_color = Color.YELLOW
+				elif self.name.contains("Tank"):
+					mat.albedo_color = Color.PURPLE
+				else:
+					mat.albedo_color = Color.RED

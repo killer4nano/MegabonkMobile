@@ -2,13 +2,6 @@ extends BaseWeapon
 class_name BonkHammer
 ## Bonk Hammer weapon - Orbits around player and bonks nearby enemies
 
-# ============================================================================
-# DEBUG MODE - Access debug constants from PlayerController
-# ============================================================================
-# Note: These must match PlayerController.gd settings
-const DEBUG_MODE: bool = true  # MASTER TOGGLE (ENABLED for testing)
-const DEBUG_ONE_HIT_KILL: bool = false  # Weapons 1-shot all enemies - DISABLED
-
 # Orbital movement settings
 @export var orbit_radius: float = 1.8
 @export var orbit_speed: float = 2.0  # Radians per second
@@ -118,9 +111,9 @@ func _on_attack_range_body_entered(body: Node3D) -> void:
 
 	# Calculate damage (with debug mode)
 	var final_damage = damage
-	if DEBUG_MODE and DEBUG_ONE_HIT_KILL:
+	if DebugConfig.is_feature_enabled("one_hit_kills"):
 		final_damage = 9999.0  # Instant kill
-		print("[DEBUG] 1-hit kill mode active - damage set to ", final_damage)
+		DebugConfig.debug_print("combat", "1-hit kill mode active - damage set to " + str(final_damage))
 		DebugLogger.log("bonk_hammer", "DEBUG MODE: 1-hit kill active, damage: 9999")
 
 	# Damage the enemy

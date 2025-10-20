@@ -3,13 +3,6 @@ class_name PlayerController
 ## Player controller for mobile roguelite
 ## Handles movement, stats, and basic player functionality
 
-# ============================================================================
-# DEBUG MODE - Set to false to disable all debug features
-# ============================================================================
-const DEBUG_MODE: bool = true  # MASTER TOGGLE - Change this to enable/disable debug (ENABLED for testing)
-const DEBUG_GOD_MODE: bool = true  # Player takes no damage - DISABLED
-const DEBUG_ONE_HIT_KILL: bool = false  # Weapons 1-shot all enemies - DISABLED
-
 
 # Player stats
 @export_group("Stats")
@@ -17,6 +10,11 @@ const DEBUG_ONE_HIT_KILL: bool = false  # Weapons 1-shot all enemies - DISABLED
 @export var move_speed: float = 5.0
 @export var acceleration: float = 20.0
 @export var friction: float = 15.0
+@export var jump_velocity: float = 8.0  # Jump strength
+@export var max_jumps: int = 1  # Number of jumps allowed (1 = normal, 2 = double jump)
+
+# Get gravity from project settings to match RigidBody
+var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 9.8)
 
 @export_group("Combat")
 @export var base_damage: float = 10.0
@@ -79,23 +77,28 @@ var xp_to_next_level: float = 100.0
 var movement_input: Vector2 = Vector2.ZERO
 var last_movement_direction: Vector3 = Vector3.FORWARD
 
+# Jump state
+var jump_count: int = 0  # Current number of jumps performed
+var jump_pressed: bool = false  # Track if jump button is pressed
+var was_on_floor: bool = true  # Track previous frame's floor state for landing detection
+
 # References (will be set externally or via signals)
 var camera_pivot: Node3D
 
 func _ready() -> void:
 	current_health = max_health
 	print("Player initialized with ", max_health, " HP")
-	Engine.time_scale = 4.0
-	# DEBUG MODE notifications
-	if DEBUG_MODE:
+
+	# Use debug config for any debug features
+	if DebugConfig.is_debug_enabled():
 		print("========================================")
 		print("⚠️  DEBUG MODE ACTIVE ⚠️")
-		if DEBUG_GOD_MODE:
+		if DebugConfig.is_feature_enabled("god_mode"):
 			print("  ✓ God Mode: ON (invincible)")
-		if DEBUG_ONE_HIT_KILL:
+		if DebugConfig.is_feature_enabled("one_hit_kills"):
 			print("  ✓ 1-Hit Kill: ON (instant kill)")
-		print("  ✓ Game Speed: 1x (normal)")
-		
+		if DebugConfig.get_player_speed_multiplier() != 1.0:
+			print("  ✓ Speed Multiplier: ", DebugConfig.get_player_speed_multiplier(), "x")
 		print("========================================")
 
 	# Add to player group for enemy targeting
@@ -125,18 +128,45 @@ func _physics_process(delta: float) -> void:
 			heal(hp_regen_per_second)
 			hp_regen_timer = 0.0
 
+	# Apply gravity when not on floor
+	if not is_on_floor():
+		velocity.y -= gravity * delta
+	else:
+		# When on floor, stop any downward or upward drift
+		if velocity.y < 0:
+			velocity.y = 0
+		# Also prevent any upward drift when on ground (unless jumping)
+		elif velocity.y > 0 and not jump_pressed:
+			velocity.y = 0
+		# Reset jump count when landing
+		if not was_on_floor:
+			jump_count = 0
+			print("Player landed - jumps reset")
+
+	# Debug: Log if player Y position is drifting
+	if is_on_floor() and abs(velocity.y) > 0.1:
+		print("[WARNING] Player on floor but Y velocity = ", velocity.y)
+
+	# Handle jump input
+	handle_jump()
+
 	# Handle movement
 	handle_movement(delta)
 
 	# Move the character
 	move_and_slide()
 
+	# Update floor state for next frame
+	was_on_floor = is_on_floor()
+
 	# Rotate ONLY the body mesh to face movement direction, not the whole player
 	# (Camera should stay independent)
-	if velocity.length() > 0.1:
+	# Only rotate based on horizontal movement, ignore vertical velocity
+	var horizontal_velocity = Vector3(velocity.x, 0, velocity.z)
+	if horizontal_velocity.length() > 0.1:
 		var body := get_node_or_null("Body")
 		if body:
-			var target_direction := velocity.normalized()
+			var target_direction := horizontal_velocity.normalized()
 			var target_rotation := atan2(target_direction.x, target_direction.z)
 			body.rotation.y = lerp_angle(body.rotation.y, target_rotation, 10.0 * delta)
 
@@ -164,22 +194,44 @@ func handle_movement(delta: float) -> void:
 			input_dir = Vector3(movement_input.x, 0, movement_input.y).normalized()
 
 	if input_dir.length() > 0:
-		# Accelerate toward input direction
-		velocity = velocity.lerp(input_dir * move_speed, acceleration * delta)
+		# Accelerate toward input direction (only horizontal movement)
+		# Apply debug speed multiplier if enabled
+		var effective_speed = move_speed * DebugConfig.get_player_speed_multiplier()
+		var target_velocity = input_dir * effective_speed
+		velocity.x = lerp(velocity.x, target_velocity.x, acceleration * delta)
+		velocity.z = lerp(velocity.z, target_velocity.z, acceleration * delta)
+		# Note: We don't touch velocity.y here - that's handled by gravity/jumping
 		# Update last movement direction for character rotation
 		last_movement_direction = input_dir
 	else:
-		# Apply friction when no input
-		velocity = velocity.lerp(Vector3.ZERO, friction * delta)
+		# Apply friction when no input (only horizontal)
+		velocity.x = lerp(velocity.x, 0.0, friction * delta)
+		velocity.z = lerp(velocity.z, 0.0, friction * delta)
+		# Note: We don't touch velocity.y here - that's handled by gravity/jumping
 
 func set_movement_input(input: Vector2) -> void:
 	"""Called by input system (touch controls or keyboard)"""
 	movement_input = input
 
+func set_jump_input(pressed: bool) -> void:
+	"""Called by input system to trigger jump"""
+	jump_pressed = pressed
+
+func handle_jump() -> void:
+	"""Handle jump logic with support for multi-jumping"""
+	if jump_pressed:
+		# Can jump if on floor OR if we have jumps remaining (for double jump)
+		if is_on_floor() or jump_count < max_jumps:
+			velocity.y = jump_velocity
+			jump_count += 1
+			print("Jump! (Jump ", jump_count, "/", max_jumps, ")")
+			# Reset the pressed flag to prevent holding for multiple jumps
+			jump_pressed = false
+
 func take_damage(amount: float, attacker: Node = null) -> void:
 	"""Deal damage to the player"""
 	# DEBUG: God mode check
-	if DEBUG_MODE and DEBUG_GOD_MODE:
+	if DebugConfig.is_feature_enabled("god_mode"):
 		print("[DEBUG] God mode active - ignoring ", amount, " damage")
 		DebugLogger.log("player_stats", "God mode active - ignored damage: %s" % amount)
 		return  # Don't take any damage

@@ -17,6 +17,7 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+DebugConfig="*res://scripts/autoload/DebugConfig.gd"
 EventBus="*res://scripts/autoload/EventBus.gd"
 GlobalData="*res://scripts/autoload/GlobalData.gd"
 SaveSystem="*res://scripts/autoload/SaveSystem.gd"
