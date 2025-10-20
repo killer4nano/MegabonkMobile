@@ -3,7 +3,7 @@ class_name ShieldRing
 ## Shield Ring weapon - Large orbital ring that damages and blocks projectiles
 
 # Orbital movement settings
-@export var orbit_radius: float = 3.0  # Larger than other orbitals
+@export var orbit_radius: float = 3.8  # Largest orbital, outermost defensive ring
 @export var orbit_speed: float = 1.5   # Slower, more defensive
 @export var blocks_projectiles: bool = true
 
@@ -68,7 +68,7 @@ func _process(delta: float) -> void:
 	var final_angle = orbit_angle + angle_offset
 	var offset = Vector3(
 		cos(final_angle) * orbit_radius,
-		0.3,  # Slightly elevated
+		1.0,  # Elevated to prevent ground clipping
 		sin(final_angle) * orbit_radius
 	)
 

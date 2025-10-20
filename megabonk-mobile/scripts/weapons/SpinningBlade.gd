@@ -3,7 +3,7 @@ class_name SpinningBlade
 ## Spinning Blade weapon - Orbits player at higher speed and range than Bonk Hammer
 
 # Orbital movement settings
-@export var orbit_radius: float = 2.5  # Larger than Bonk Hammer (1.8m)
+@export var orbit_radius: float = 3.2  # Larger than Bonk Hammer (2.8m), safe buffer from enemy attack range
 @export var orbit_speed: float = 3.0   # Faster than Bonk Hammer (2.0 rad/s)
 
 # Visual feedback
@@ -61,7 +61,7 @@ func _process(delta: float) -> void:
 	var final_angle = orbit_angle + angle_offset
 	var offset = Vector3(
 		cos(final_angle) * orbit_radius,
-		0.5,  # Slightly elevated
+		1.2,  # Elevated to prevent ground clipping
 		sin(final_angle) * orbit_radius
 	)
 

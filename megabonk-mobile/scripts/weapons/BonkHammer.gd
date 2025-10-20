@@ -3,7 +3,7 @@ class_name BonkHammer
 ## Bonk Hammer weapon - Orbits around player and bonks nearby enemies
 
 # Orbital movement settings
-@export var orbit_radius: float = 1.8
+@export var orbit_radius: float = 3.5  # Large radius to ensure enemies are hit before reaching player (enemy attack_range: 1.5m)
 @export var orbit_speed: float = 2.0  # Radians per second
 
 # Visual feedback
@@ -38,6 +38,10 @@ func _ready() -> void:
 	# Find visual mesh
 	hammer_visual = get_node_or_null("HammerVisual")
 
+	# Make hammer 1.5x larger
+	if hammer_visual:
+		hammer_visual.scale = Vector3(1.5, 1.5, 1.5)
+
 	# Connect to AttackRange area for collision-based damage
 	var attack_range_area = get_node_or_null("AttackRange")
 	if attack_range_area and attack_range_area is Area3D:
@@ -63,19 +67,17 @@ func _process(delta: float) -> void:
 	var final_angle = orbit_angle + angle_offset
 	var offset = Vector3(
 		cos(final_angle) * orbit_radius,
-		0.0,  # Keep at player's Y level
+		1.0,  # Elevated to prevent ground clipping
 		sin(final_angle) * orbit_radius
 	)
 
-	# Set position relative to player (local position since WeaponManager is child of Player)
-	position = offset
+	# Set position relative to player (using global position for perfect circle)
+	global_position = player.global_position + offset
 
-	# Rotate the hammer visual to face outward
+	# Orient hammer to face player (hilt toward player, head outward)
 	if hammer_visual:
-		# Face the direction of movement (with offset)
-		hammer_visual.rotation.y = final_angle + PI / 2
-		# Add constant spin for visual effect
-		hammer_visual.rotation.z += delta * 4.0
+		hammer_visual.look_at(player.global_position, Vector3.UP)
+		hammer_visual.rotation.x = PI / 2  # Tilt horizontally so it lies flat
 
 	# Clean up old hit tracking entries
 	var current_time = Time.get_ticks_msec() / 1000.0
