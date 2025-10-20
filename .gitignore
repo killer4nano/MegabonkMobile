@@ -1,47 +1,41 @@
 # Godot 4+ specific ignores
 .godot/
-.import/
-
-# Godot-specific
 *.translation
 
-# Mono-specific ignores (if using C#)
+# Godot-specific
+*.import
+*.md5
+*.log
+
+# Mono-specific ignores
 .mono/
 data_*/
 mono_crash.*.json
 
-# System/tool-specific ignores
+# System/tool-specific
 .DS_Store
 Thumbs.db
-*.swp
-*.swo
-*~
 
-# Build artifacts
-*.log
-*.tmp
-
-# IDE-specific
+# Visual Studio / Rider
+.vs/
 .vscode/
 .idea/
-*.sublime-workspace
-*.sublime-project
 
-# Export presets (may contain sensitive data)
+# Build results
 export_presets.cfg
-
-# Android/iOS builds
+*.zip
 *.apk
-*.aab
 *.ipa
-
-# Imported translations (if using POT workflow)
-*.pot
+*.exe
 
 # Backup files
 *.bak
-*~.gd
+*~
 
-# Analysis and debug files (keep the important ones in version control)
-# But ignore large debug logs
-megabonk-mobile/app_userdata/
+# Project management and documentation (not part of game)
+PM_SYSTEM/
+PM_Prompt.md
+PM_SYSTEM_COMPLETE.md
+PM_SYSTEM_QUICK_START.md
+GITHUB_SETUP.md
+archive/
