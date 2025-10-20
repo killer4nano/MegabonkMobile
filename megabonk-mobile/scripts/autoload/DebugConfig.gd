@@ -4,6 +4,11 @@ extends Node
 ## Add as autoload: Project Settings > Autoload > DebugConfig
 
 # ============================================================================
+# BASE GAME SPEED (Not debug - this is the normal game speed)
+# ============================================================================
+const BASE_GAME_SPEED: float = 4.0  # The game was balanced at 4x speed
+
+# ============================================================================
 # MASTER DEBUG TOGGLE
 # ============================================================================
 const DEBUG_MODE: bool = false  # Set to true to enable ALL debug features
@@ -18,7 +23,8 @@ const ONE_HIT_KILLS: bool = false  # Enemies die in one hit
 const INFINITE_AMMO: bool = false  # Unlimited ammo/resources
 
 # Movement & Speed
-const SPEED_MULTIPLIER: float = 1.0  # Player speed multiplier (1.0 = normal)
+const SPEED_MULTIPLIER: float = 1.0  # Player speed multiplier (1.0 = normal, relative to base speed)
+const GAME_SPEED_DEBUG_MULTIPLIER: float = 1.0  # Additional speed for debugging (multiplies BASE_GAME_SPEED)
 const NO_GRAVITY: bool = false  # Disable gravity for player
 const FLIGHT_MODE: bool = false  # Allow flying
 
@@ -124,6 +130,15 @@ func debug_print(category: String, message: String) -> void:
 		print("[DEBUG-", category.to_upper(), "] ", message)
 
 func _ready():
+	# Apply base game speed (this is NOT debug, it's the normal speed the game was balanced for)
+	var final_speed = BASE_GAME_SPEED
+	if DEBUG_MODE and GAME_SPEED_DEBUG_MULTIPLIER != 1.0:
+		final_speed *= GAME_SPEED_DEBUG_MULTIPLIER
+		print("Debug speed multiplier applied: ", GAME_SPEED_DEBUG_MULTIPLIER, "x")
+
+	Engine.time_scale = final_speed
+	print("Game speed set to: ", final_speed, "x (base: ", BASE_GAME_SPEED, "x)")
+
 	if DEBUG_MODE:
 		print("========================================")
 		print("DEBUG MODE ACTIVE")
@@ -155,4 +170,4 @@ func _ready():
 
 		print("========================================")
 	else:
-		print("Debug mode disabled. Production build active.")
+		print("Production mode active. Debug features disabled.")
