@@ -6,7 +6,7 @@ extends Node
 # ============================================================================
 # BASE GAME SPEED (Not debug - this is the normal game speed)
 # ============================================================================
-const BASE_GAME_SPEED: float = 4.0  # The game was balanced at 4x speed
+const BASE_GAME_SPEED: float = 2.0  # Fast-paced mobile gameplay without timing issues
 
 # ============================================================================
 # MASTER DEBUG TOGGLE
