@@ -1,0 +1,68 @@
+[gd_scene load_steps=11 format=3 uid="uid://dpq5mw8vn4rxb"]
+
+[ext_resource type="PackedScene" uid="uid://dho5nhabi6q0i" path="res://scenes/player/Player.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://ctjp37vquwyu5" path="res://scripts/managers/GameManager.gd" id="2_manager"]
+[ext_resource type="Script" uid="uid://u2p27yk6fgyw" path="res://scripts/managers/WaveManager.gd" id="3_wave"]
+[ext_resource type="PackedScene" uid="uid://c5vmqj8h7dpn8" path="res://scenes/ui/UpgradeScreen.tscn" id="4_upgrade"]
+[ext_resource type="Script" path="res://scripts/testing/AutomatedTestController.gd" id="5_test"]
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_auto"]
+vertices = PackedVector3Array(-25, 0.5, -25, -25, 0.5, 25, 25, 0.5, 25, 25, 0.5, -25)
+polygons = [PackedInt32Array(3, 2, 0), PackedInt32Array(0, 2, 1)]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_auto"]
+size = Vector2(50, 50)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_auto"]
+albedo_color = Color(0.3, 0.5, 0.3, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_auto"]
+size = Vector3(50, 0.1, 50)
+
+[sub_resource type="Environment" id="Environment_auto"]
+background_mode = 1
+background_color = Color(0.53, 0.73, 0.87, 1)
+ambient_light_source = 2
+ambient_light_color = Color(1, 1, 1, 1)
+
+[node name="AutomatedTest" type="Node3D"]
+
+[node name="GameManager" type="Node" parent="."]
+script = ExtResource("2_manager")
+
+[node name="WaveManager" type="Node" parent="."]
+script = ExtResource("3_wave")
+
+[node name="AutomatedTestController" type="Node" parent="."]
+script = ExtResource("5_test")
+test_duration = 90.0
+xp_per_second = 50.0
+auto_select_upgrades = true
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+navigation_mesh = SubResource("NavigationMesh_auto")
+
+[node name="Ground" type="StaticBody3D" parent="NavigationRegion3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="NavigationRegion3D/Ground"]
+mesh = SubResource("PlaneMesh_auto")
+surface_material_override/0 = SubResource("StandardMaterial3D_auto")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavigationRegion3D/Ground"]
+shape = SubResource("BoxShape3D_auto")
+
+[node name="Player" parent="." groups=["player"] instance=ExtResource("1_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 15, 15)
+fov = 60.0
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 10, 0)
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_auto")
+
+[node name="UpgradeScreen" parent="." instance=ExtResource("4_upgrade")]

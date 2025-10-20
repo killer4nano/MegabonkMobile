@@ -1,0 +1,30 @@
+[gd_scene load_steps=4 format=3 uid="uid://ct8d3xhv2jqp7"]
+
+[ext_resource type="Script" path="res://scripts/weapons/MagicMissile.gd" id="1_magic_missile"]
+[ext_resource type="Resource" uid="uid://bvn4xk7m8pqr2" path="res://resources/weapons/MagicMissileData.tres" id="2_magic_missile_data"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_wand"]
+top_radius = 0.05
+bottom_radius = 0.08
+height = 0.6
+
+[node name="MagicMissile" type="Node3D"]
+script = ExtResource("1_magic_missile")
+weapon_data = ExtResource("2_magic_missile_data")
+damage = 20.0
+attack_cooldown = 2.0
+attack_range = 15.0
+projectile_speed = 10.0
+homing_strength = 5.0
+projectile_lifetime = 5.0
+
+[node name="Visual" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, 0.8, 0)
+
+[node name="Wand" type="MeshInstance3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 0, 0)
+mesh = SubResource("CylinderMesh_wand")
+
+[node name="Orb" type="CSGSphere3D" parent="Visual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+radius = 0.1

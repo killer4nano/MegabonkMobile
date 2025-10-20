@@ -1,0 +1,35 @@
+[gd_scene load_steps=3 format=3 uid="uid://dsf7k2n4m9p1q"]
+
+[ext_resource type="Script" path="res://scripts/interactables/BaseShrine.gd" id="1_shrine"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_1"]
+radius = 2.0
+
+[node name="BaseShrine" type="StaticBody3D"]
+collision_layer = 2
+collision_mask = 0
+script = ExtResource("1_shrine")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+
+[node name="CylinderMesh" type="CylinderMesh" parent="Mesh"]
+height = 1.5
+radial_segments = 16
+
+[node name="Label3D" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+pixel_size = 0.01
+billboard = 1
+text = "Shrine
+50 gold"
+font_size = 32
+outline_size = 8
+outline_modulate = Color(0, 0, 0, 1)
+
+[node name="InteractionArea" type="Area3D" parent="."]
+collision_layer = 0
+collision_mask = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="InteractionArea"]
+shape = SubResource("SphereShape3D_1")

@@ -1,0 +1,169 @@
+{
+  "id": "TASK-016",
+  "title": "Fix navigation jitter on spawn and after teleport",
+  "type": "bug_fix",
+  "priority": "HIGH",
+  "assigned_to": "project_manager",
+  "status": "completed",
+  "created": "2025-10-20T03:40:00Z",
+  "completed": "2025-10-20T03:45:00Z",
+  "estimated_hours": 0.25,
+  "actual_hours": 0.1,
+  "discovered_by": "User play testing",
+  "description": "Enemies exhibit jittery motion when they first spawn and after teleporting. They don't immediately move forward smoothly.",
+
+  "bug_details": {
+    "symptom_1": "Enemies don't immediately move forward when game starts",
+    "symptom_2": "Enemies get stuck in jittery motion after teleporting",
+    "user_feedback": "after teleportation the enemies seem to get stuck in a jittery motion and not path forward. same with when the game initially starts they don't immediately move forward",
+    "severity": "HIGH - Breaks enemy AI appearance",
+    "impact": "Enemies look broken/buggy, poor gameplay experience"
+  },
+
+  "root_cause_analysis": {
+    "problem": "NavigationAgent3D needs time to calculate valid path after position changes",
+    "timing_issue": "Enemies try to move before NavigationServer updates their path",
+    "when_it_occurs": [
+      "On spawn: NavigationAgent3D not ready when _physics_process starts",
+      "After teleport: NavigationAgent3D has stale path from old position"
+    ],
+    "technical_explanation": "NavigationServer3D updates navigation paths asynchronously. When an enemy spawns or teleports, the NavigationAgent3D.get_next_path_position() returns invalid positions until the server recalculates the path. Trying to move to invalid positions causes jittery back-and-forth movement.",
+    "godot_requirement": "Must wait for physics_frame updates after position change before querying navigation"
+  },
+
+  "fix_implementation": {
+    "file": "BaseEnemy.gd",
+    "approach": "Add navigation_ready flag, wait for NavigationServer before allowing movement",
+    "changes": [
+      {
+        "line": 56,
+        "change": "Added navigation_ready: bool = false variable"
+      },
+      {
+        "lines": "95-99",
+        "change": "Wait for 2 physics frames in _ready(), then set navigation_ready = true"
+      },
+      {
+        "lines": "154-157",
+        "change": "Check navigation_ready at start of handle_movement(), return if false"
+      },
+      {
+        "lines": "428-439",
+        "change": "Reset navigation_ready after teleport, call _wait_for_navigation_ready()"
+      }
+    ]
+  },
+
+  "technical_details": {
+    "navigation_ready_flag": {
+      "purpose": "Prevents movement until NavigationServer has valid path",
+      "initial_state": "false (no movement allowed)",
+      "set_to_true_when": "After waiting 2 physics frames (navigation ready)",
+      "set_to_false_when": "After teleporting (navigation needs recalc)"
+    },
+    "physics_frame_wait": {
+      "why_two_frames": "First frame: position update propagates. Second frame: NavigationServer recalculates paths.",
+      "godot_api": "await get_tree().physics_frame (waits one physics tick)",
+      "safety_margin": "Two frames ensures NavigationServer has processed new position"
+    },
+    "spawn_sequence": {
+      "step_1": "_ready() called, navigation_ready = false",
+      "step_2": "Configure NavigationAgent3D",
+      "step_3": "Wait 2 physics frames",
+      "step_4": "Set navigation_ready = true",
+      "step_5": "_physics_process() can now move enemy"
+    },
+    "teleport_sequence": {
+      "step_1": "_teleport_near_player() called",
+      "step_2": "Set global_position, velocity = zero",
+      "step_3": "Set navigation_ready = false (block movement)",
+      "step_4": "Call _wait_for_navigation_ready() (async)",
+      "step_5": "Wait 2 physics frames",
+      "step_6": "Set navigation_ready = true (resume movement)"
+    }
+  },
+
+  "code_changes": {
+    "new_variable": {
+      "name": "navigation_ready",
+      "type": "bool",
+      "default": false,
+      "purpose": "Gate movement until NavigationServer ready"
+    },
+    "new_function": {
+      "name": "_wait_for_navigation_ready()",
+      "lines": "434-439",
+      "purpose": "Async wait for navigation to be ready after teleport",
+      "implementation": "await 2 physics frames, set navigation_ready = true"
+    },
+    "modified_ready": {
+      "added_lines": "95-99",
+      "logic": "Wait for navigation before emitting spawn signal"
+    },
+    "modified_handle_movement": {
+      "added_lines": "154-157",
+      "logic": "Early return if navigation not ready, lerp velocity to zero"
+    },
+    "modified_teleport": {
+      "added_lines": "428-430",
+      "logic": "Reset navigation_ready, call async wait function"
+    }
+  },
+
+  "gameplay_impact": {
+    "before": {
+      "spawn": "Enemies jitter in place for ~0.5s before moving smoothly",
+      "teleport": "Enemies jitter/stutter after teleport, look broken",
+      "user_perception": "AI appears buggy and broken"
+    },
+    "after": {
+      "spawn": "Enemies stand still briefly (~0.1s), then move smoothly",
+      "teleport": "Enemies pause briefly after teleport, then resume smooth movement",
+      "user_perception": "AI looks polished and intentional"
+    }
+  },
+
+  "files_modified": [
+    {
+      "file": "megabonk-mobile/scripts/enemies/BaseEnemy.gd",
+      "changes": [
+        "Line 56: Added navigation_ready variable",
+        "Lines 95-99: Added navigation readiness wait in _ready()",
+        "Lines 154-157: Added navigation check in handle_movement()",
+        "Lines 428-430: Reset navigation on teleport",
+        "Lines 434-439: Added _wait_for_navigation_ready() function"
+      ]
+    }
+  ],
+
+  "verification_steps": {
+    "test_1_spawn": "Start game, observe enemies spawn and immediately move smoothly (no jitter)",
+    "test_2_teleport": "Run >50m from enemies, wait for teleport, verify smooth movement after teleport",
+    "test_3_multiple_enemies": "Spawn many enemies, verify all move smoothly (not just some)",
+    "test_4_no_delay": "Verify pause is barely noticeable (~0.1s, not multiple seconds)",
+    "expected_behavior": "Enemies move smoothly on spawn and after teleport, no jittery motion"
+  },
+
+  "acceptance_criteria": [
+    "✅ Added navigation_ready flag to BaseEnemy",
+    "✅ Wait for navigation in _ready() before allowing movement",
+    "✅ Check navigation_ready in handle_movement()",
+    "✅ Reset navigation_ready after teleport",
+    "✅ Wait for navigation after teleport before resuming movement",
+    "⏳ User confirms smooth movement on spawn (pending)",
+    "⏳ User confirms smooth movement after teleport (pending)"
+  ],
+
+  "lessons_learned": {
+    "lesson_1": "NavigationAgent3D paths are asynchronous, must wait for NavigationServer",
+    "lesson_2": "Position changes (spawn, teleport) invalidate navigation paths",
+    "lesson_3": "Two physics frames is safe wait time for navigation recalculation",
+    "lesson_4": "Lerping velocity to zero while waiting looks better than instant stop",
+    "lesson_5": "Brief pause is better UX than jittery movement"
+  },
+
+  "related_tasks": [
+    "TASK-015: Added teleport system (revealed this bug)",
+    "TASK-012: Fixed NavigationMesh baking (foundation for this fix)"
+  ]
+}

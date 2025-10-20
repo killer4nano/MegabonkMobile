@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://resources/characters/CharacterData.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+character_id = "ranger"
+character_name = "Ranger"
+description = "Swift and precise. Excels at kiting enemies with ranged weapons."
+character_color = Color(0.2, 0.8, 0.2, 1)
+max_health = 75.0
+move_speed = 6.5
+base_damage = 8.0
+pickup_range = 5.0
+passive_name = "Sharpshooter"
+passive_description = "+30% damage with ranged weapons\n+2m pickup range"
+damage_reduction = 0.0
+melee_damage_bonus = 0.0
+ranged_damage_bonus = 0.3
+crit_chance_bonus = 0.0
+crit_damage_bonus = 0.0
+xp_multiplier = 1.0
+extra_starting_weapons = 0
+starting_weapon_id = "magic_missile"
+unlock_cost = 500
+is_starter = false

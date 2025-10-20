@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://resources/characters/CharacterData.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+character_id = "mage"
+character_name = "Mage"
+description = "Master of the arcane. Starts with multiple weapons and learns faster."
+character_color = Color(0.2, 0.5, 0.9, 1)
+max_health = 70.0
+move_speed = 5.0
+base_damage = 8.0
+pickup_range = 3.0
+passive_name = "Arcane Mastery"
+passive_description = "Start with 2 weapons\n+15% XP gain"
+damage_reduction = 0.0
+melee_damage_bonus = 0.0
+ranged_damage_bonus = 0.0
+crit_chance_bonus = 0.0
+crit_damage_bonus = 0.0
+xp_multiplier = 1.15
+extra_starting_weapons = 1
+starting_weapon_id = "magic_missile"
+unlock_cost = 1500
+is_starter = false

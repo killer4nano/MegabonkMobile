@@ -1,0 +1,206 @@
+{
+  "id": "TASK-017",
+  "title": "Fix RangedEnemy teleport, infinite teleport loop, and spawn delay",
+  "type": "bug_fix",
+  "priority": "CRITICAL",
+  "assigned_to": "project_manager",
+  "status": "completed",
+  "created": "2025-10-20T03:50:00Z",
+  "completed": "2025-10-20T04:00:00Z",
+  "estimated_hours": 0.5,
+  "actual_hours": 0.17,
+  "discovered_by": "User play testing",
+  "description": "Three critical bugs discovered after TASK-016: 1) RangedEnemy doesn't teleport (doesn't call base check), 2) Enemies get stuck in infinite teleport loop after first teleport, 3) Enemies don't chase immediately on spawn (several second delay).",
+
+  "bugs_fixed": {
+    "bug_1_ranged_no_teleport": {
+      "symptom": "Green ranged enemies don't teleport, just stop chasing when player too far",
+      "user_feedback": "Green ranged enemies don't seem to teleport but they start moving towards me when i get close enough if i m too far they just stop chasing",
+      "root_cause": "RangedEnemy has own _physics_process, doesn't call base _check_teleport_distance()",
+      "severity": "HIGH - Ranged enemies can be cheesed by running away",
+      "impact": "Inconsistent behavior between enemy types"
+    },
+    "bug_2_infinite_teleport_loop": {
+      "symptom": "Enemies keep teleporting repeatedly, jitter in new position",
+      "user_feedback": "if any of them teleport they start jittery not being able to move just keep teleporting whenever i get far away and then continue to jitter in new position",
+      "root_cause": "_check_teleport_distance() runs while navigation_ready = false, immediately re-triggers teleport",
+      "severity": "CRITICAL - Game unplayable, enemies broken",
+      "impact": "Enemies stuck in infinite teleport loop, never attack",
+      "technical_explanation": "After teleport: navigation_ready = false → _check_teleport_distance() still runs → player still far → teleport again → infinite loop!"
+    },
+    "bug_3_spawn_delay": {
+      "symptom": "Enemies don't chase immediately on spawn, wait several seconds",
+      "user_feedback": "all other enemies they don't chase immediately on spawn until a few seconds have passed",
+      "root_cause": "await in _ready() blocks execution, delays navigation_ready = true",
+      "severity": "HIGH - Poor first impression, confusing gameplay",
+      "impact": "Player spawns, enemies just stand there for seconds before attacking"
+    }
+  },
+
+  "fix_1_ranged_teleport": {
+    "file": "RangedEnemy.gd",
+    "line": 60,
+    "change": "Added _check_teleport_distance(delta) call in _physics_process()",
+    "why_needed": "RangedEnemy overrides _physics_process, so doesn't inherit base teleport check",
+    "result": "RangedEnemy now teleports like all other enemies"
+  },
+
+  "fix_2_infinite_teleport": {
+    "file": "BaseEnemy.gd",
+    "lines": "384-386",
+    "change": "Added navigation_ready check at start of _check_teleport_distance()",
+    "logic": "if not navigation_ready: return (skip teleport check)",
+    "why_it_works": {
+      "before": "navigation_ready = false → teleport check runs → player far → teleport again → loop!",
+      "after": "navigation_ready = false → teleport check returns early → timer counts down → navigation_ready = true → normal behavior resumes",
+      "key": "Teleport can only trigger when navigation is ready, preventing infinite loop"
+    },
+    "result": "Enemies teleport once, wait for navigation, then resume normal movement"
+  },
+
+  "fix_3_spawn_delay": {
+    "file": "BaseEnemy.gd",
+    "approach": "Replace async await with synchronous timer countdown in _physics_process",
+    "changes": [
+      {
+        "lines": "57-58",
+        "change": "Added navigation_ready_timer and navigation_ready_delay variables"
+      },
+      {
+        "line": 98,
+        "change": "Set navigation_ready_timer = navigation_ready_delay in _ready() (no await)"
+      },
+      {
+        "lines": "119-124",
+        "change": "Count down timer in _physics_process, set navigation_ready = true when expires"
+      },
+      {
+        "lines": "439-440",
+        "change": "Reset timer after teleport (removed async _wait_for_navigation_ready function)"
+      }
+    ],
+    "why_it_works": {
+      "before": "await get_tree().physics_frame blocks _ready() → delays everything",
+      "after": "Timer starts immediately in _ready() → counts down in _physics_process → 0.1s delay",
+      "timing": "navigation_ready_delay = 0.1 seconds (barely noticeable, prevents jitter)"
+    },
+    "result": "Enemies start moving after 0.1s (was several seconds)"
+  },
+
+  "fix_4_ranged_navigation_check": {
+    "file": "RangedEnemy.gd",
+    "lines": "78-82",
+    "change": "Added navigation_ready check before movement code",
+    "why_needed": "RangedEnemy uses direct movement, needs navigation_ready check too",
+    "result": "RangedEnemy doesn't move during 0.1s startup or after teleport"
+  },
+
+  "technical_details": {
+    "timer_vs_await": {
+      "await_approach": {
+        "code": "await get_tree().physics_frame",
+        "problem": "Blocks _ready() execution, delays everything",
+        "timing": "Unpredictable, can take several seconds",
+        "side_effects": "Delays signal emission, player finding, everything"
+      },
+      "timer_approach": {
+        "code": "navigation_ready_timer -= delta in _physics_process",
+        "benefit": "Non-blocking, _ready() finishes immediately",
+        "timing": "Precise 0.1 seconds",
+        "side_effects": "None, only affects movement"
+      }
+    },
+    "teleport_loop_prevention": {
+      "sequence_before": [
+        "1. Enemy teleports (navigation_ready = false)",
+        "2. Next frame: _check_teleport_distance() runs",
+        "3. Player still >50m away",
+        "4. Teleport again!",
+        "5. Infinite loop"
+      ],
+      "sequence_after": [
+        "1. Enemy teleports (navigation_ready = false, timer = 0.1)",
+        "2. Next frame: _check_teleport_distance() returns early (navigation not ready)",
+        "3. Timer counts down: 0.1 → 0.05 → 0",
+        "4. navigation_ready = true",
+        "5. _check_teleport_distance() resumes normal operation"
+      ],
+      "key_insight": "Teleport cooldown doesn't work if enemy keeps re-teleporting. Must block teleport check while navigation recalculates."
+    },
+    "ranged_enemy_override": {
+      "why_needed": "RangedEnemy has custom _physics_process (direct movement, line of sight, repositioning)",
+      "inheritance_issue": "BaseEnemy._physics_process not called automatically",
+      "solution": "Manually call _check_teleport_distance(delta) in RangedEnemy._physics_process",
+      "applies_to_all_overrides": "Any enemy subclass that overrides _physics_process must call base methods manually"
+    }
+  },
+
+  "gameplay_impact": {
+    "before": {
+      "ranged_enemies": "Don't teleport, can be cheesed by running away",
+      "teleporting": "Infinite loop, enemies broken and jittery",
+      "spawn": "Enemies stand still for seconds before attacking",
+      "playability": "BROKEN - Enemies appear buggy and broken"
+    },
+    "after": {
+      "ranged_enemies": "Teleport consistently like all enemies",
+      "teleporting": "Single teleport, brief pause (0.1s), smooth movement resumes",
+      "spawn": "Enemies start moving after 0.1s (barely noticeable)",
+      "playability": "POLISHED - Enemies behave consistently and smoothly"
+    }
+  },
+
+  "files_modified": [
+    {
+      "file": "megabonk-mobile/scripts/enemies/BaseEnemy.gd",
+      "changes": [
+        "Lines 57-58: Added navigation_ready_timer and navigation_ready_delay",
+        "Line 98: Start timer in _ready() instead of await",
+        "Lines 119-124: Count down timer in _physics_process",
+        "Lines 384-386: Skip teleport check if navigation not ready",
+        "Lines 439-440: Reset timer after teleport (removed async function)"
+      ]
+    },
+    {
+      "file": "megabonk-mobile/scripts/enemies/RangedEnemy.gd",
+      "changes": [
+        "Line 60: Added _check_teleport_distance(delta) call",
+        "Lines 78-82: Added navigation_ready check before movement"
+      ]
+    }
+  ],
+
+  "verification_steps": {
+    "test_1_ranged_teleport": "Run far from green ranged enemies (>50m), wait 5s, verify they teleport",
+    "test_2_no_loop": "Run far from any enemy, verify they teleport ONCE and don't repeatedly teleport",
+    "test_3_spawn_chase": "Start game, verify enemies start chasing within ~0.1 seconds (not multiple seconds)",
+    "test_4_smooth_after_teleport": "Verify enemies move smoothly after teleporting (no jitter)",
+    "test_5_all_enemy_types": "Test BasicEnemy, FastEnemy, TankEnemy, RangedEnemy all work consistently",
+    "expected_behavior": "All enemies chase immediately on spawn, teleport once if player runs far, move smoothly"
+  },
+
+  "acceptance_criteria": [
+    "✅ RangedEnemy calls _check_teleport_distance()",
+    "✅ RangedEnemy checks navigation_ready before moving",
+    "✅ Teleport check skipped while navigation_ready = false",
+    "✅ Timer-based navigation_ready (0.1s delay)",
+    "✅ No await in _ready() (non-blocking)",
+    "⏳ User confirms RangedEnemy teleports (pending)",
+    "⏳ User confirms no infinite teleport loop (pending)",
+    "⏳ User confirms enemies chase immediately on spawn (pending)"
+  ],
+
+  "lessons_learned": {
+    "lesson_1": "Avoid await in _ready() - causes unpredictable delays and blocks initialization",
+    "lesson_2": "Use timer-based delays in _physics_process for predictable timing",
+    "lesson_3": "Overridden _physics_process must manually call base class methods (no automatic inheritance)",
+    "lesson_4": "State checks must prevent infinite loops (teleport while navigation not ready → infinite loop)",
+    "lesson_5": "Test all enemy types separately - inheritance issues can cause inconsistent behavior",
+    "lesson_6": "0.1 second delay is barely noticeable but prevents jitter"
+  },
+
+  "related_tasks": [
+    "TASK-015: Added teleport system (foundation for this task)",
+    "TASK-016: First attempt to fix navigation jitter (revealed these bugs)"
+  ]
+}

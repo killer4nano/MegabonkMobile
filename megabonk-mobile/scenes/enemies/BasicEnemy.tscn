@@ -1,0 +1,36 @@
+[gd_scene load_steps=6 format=3 uid="uid://bk5qw8n7x3mpq"]
+
+[ext_resource type="PackedScene" uid="uid://dj4w5b8y9x2pq" path="res://scenes/enemies/BaseEnemy.tscn" id="1_base"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_basic"]
+radius = 0.5
+height = 2.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_basic"]
+albedo_color = Color(0.8, 0.2, 0.2, 1)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_basic"]
+radius = 0.5
+height = 2.0
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_attack_basic"]
+radius = 1.5
+
+[node name="BasicEnemy" instance=ExtResource("1_base")]
+max_health = 50.0
+move_speed = 3.0
+damage = 10.0
+xp_value = 10.0
+
+[node name="Body" parent="." index="0"]
+mesh = SubResource("CapsuleMesh_basic")
+surface_material_override/0 = SubResource("StandardMaterial3D_basic")
+
+[node name="CollisionShape3D" parent="." index="1"]
+shape = SubResource("CapsuleShape3D_basic")
+
+[node name="NavigationAgent3D" parent="." index="2"]
+max_speed = 3.0
+
+[node name="CollisionShape3D" parent="AttackRange" index="0"]
+shape = SubResource("SphereShape3D_attack_basic")

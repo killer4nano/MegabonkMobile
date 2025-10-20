@@ -1,0 +1,51 @@
+[gd_scene load_steps=7 format=3 uid="uid://cam5p7qxvwy0"]
+
+[ext_resource type="PackedScene" uid="uid://dj4w5b8y9x2pq" path="res://scenes/enemies/BaseEnemy.tscn" id="1_base"]
+[ext_resource type="Script" path="res://scripts/enemies/BossEnemy.gd" id="2_script"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_boss"]
+radius = 1.0
+height = 4.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_boss"]
+albedo_color = Color(0.15, 0.05, 0.2, 1)
+metallic = 0.3
+roughness = 0.7
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_boss"]
+radius = 1.0
+height = 4.0
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_attack_boss"]
+radius = 2.0
+
+[node name="BossEnemy" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+max_health = 500.0
+move_speed = 2.5
+damage = 30.0
+xp_value = 100.0
+gold_value = 50
+attack_range = 2.0
+
+[node name="Body" parent="." index="0"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+mesh = SubResource("CapsuleMesh_boss")
+surface_material_override/0 = SubResource("StandardMaterial3D_boss")
+
+[node name="CollisionShape3D" parent="." index="1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+shape = SubResource("CapsuleShape3D_boss")
+
+[node name="NavigationAgent3D" parent="." index="2"]
+path_desired_distance = 1.0
+target_desired_distance = 2.0
+path_max_distance = 5.0
+radius = 1.0
+max_speed = 2.5
+
+[node name="AttackRange" parent="." index="3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+
+[node name="CollisionShape3D" parent="AttackRange" index="0"]
+shape = SubResource("SphereShape3D_attack_boss")

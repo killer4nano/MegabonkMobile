@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="WeaponData" load_steps=2 format=3 uid="uid://bvn4xk7m8pqr2"]
+
+[ext_resource type="Script" path="res://resources/weapons/WeaponData.gd" id="1_weapon_data"]
+
+[resource]
+script = ExtResource("1_weapon_data")
+weapon_name = "Magic Missile"
+base_damage = 20.0
+attack_cooldown = 2.0
+attack_range = 8.0
+projectile_count = 1
+level = 1

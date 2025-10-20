@@ -1,0 +1,40 @@
+[gd_scene load_steps=7 format=3 uid="uid://c5617su6kw23"]
+
+[ext_resource type="PackedScene" uid="uid://dj4w5b8y9x2pq" path="res://scenes/enemies/BaseEnemy.tscn" id="1_base"]
+[ext_resource type="Script" path="res://scripts/enemies/RangedEnemy.gd" id="2_script"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_ranged"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ranged"]
+albedo_color = Color(0.2, 0.8, 0.2, 1)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_ranged"]
+radius = 0.4
+height = 1.8
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_attack_ranged"]
+radius = 8.0
+
+[node name="RangedEnemy" instance=ExtResource("1_base")]
+script = ExtResource("2_script")
+max_health = 40.0
+move_speed = 2.0
+damage = 10.0
+xp_value = 15.0
+gold_value = 3
+attack_range = 8.0
+
+[node name="Body" parent="." index="0"]
+mesh = SubResource("CapsuleMesh_ranged")
+surface_material_override/0 = SubResource("StandardMaterial3D_ranged")
+
+[node name="CollisionShape3D" parent="." index="1"]
+shape = SubResource("CapsuleShape3D_ranged")
+
+[node name="NavigationAgent3D" parent="." index="2"]
+max_speed = 2.0
+
+[node name="CollisionShape3D" parent="AttackRange" index="0"]
+shape = SubResource("SphereShape3D_attack_ranged")

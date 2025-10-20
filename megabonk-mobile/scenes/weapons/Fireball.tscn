@@ -1,0 +1,29 @@
+[gd_scene load_steps=5 format=3 uid="uid://fireball_weapon_001"]
+
+[ext_resource type="Script" path="res://scripts/weapons/Fireball.gd" id="1_fireball"]
+[ext_resource type="Script" path="res://resources/weapons/WeaponData.gd" id="2_weapondata"]
+
+[sub_resource type="Resource" id="Resource_fireball_data"]
+script = ExtResource("2_weapondata")
+weapon_name = "Fireball"
+weapon_description = "Launch explosive fireballs that deal AOE damage on impact!"
+base_damage = 25.0
+attack_cooldown = 1.5
+attack_range = 10.0
+projectile_count = 1
+level = 1
+
+[sub_resource type="SphereMesh" id="SphereMesh_fireball_visual"]
+radius = 0.2
+height = 0.4
+
+[node name="Fireball" type="Node3D"]
+script = ExtResource("1_fireball")
+weapon_data = SubResource("Resource_fireball_data")
+weapon_type = "ranged"
+projectile_speed = 12.0
+projectile_lifetime = 5.0
+explosion_radius = 2.0
+
+[node name="Visual" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_fireball_visual")

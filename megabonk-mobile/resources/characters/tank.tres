@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://resources/characters/CharacterData.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+character_id = "tank"
+character_name = "Tank"
+description = "Heavily armored juggernaut. Slow but nearly indestructible."
+character_color = Color(0.5, 0.3, 0.7, 1)
+max_health = 150.0
+move_speed = 3.5
+base_damage = 12.0
+pickup_range = 3.0
+passive_name = "Fortified"
+passive_description = "Take 15% reduced damage from all sources"
+damage_reduction = 0.15
+melee_damage_bonus = 0.0
+ranged_damage_bonus = 0.0
+crit_chance_bonus = 0.0
+crit_damage_bonus = 0.0
+xp_multiplier = 1.0
+extra_starting_weapons = 0
+starting_weapon_id = "bonk_hammer"
+unlock_cost = 750
+is_starter = false

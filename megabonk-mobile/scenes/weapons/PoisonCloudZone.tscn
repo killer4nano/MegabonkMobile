@@ -1,0 +1,22 @@
+[gd_scene load_steps=4 format=3 uid="uid://poison_cloud_zone_001"]
+
+[ext_resource type="Script" path="res://scripts/weapons/PoisonCloudZone.gd" id="1_cloud_zone"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_cloud"]
+radius = 1.5
+height = 3.0
+
+[sub_resource type="SphereShape3D" id="SphereShape_cloud"]
+radius = 3.0
+
+[node name="PoisonCloudZone" type="Area3D" groups=["poison_cloud"]]
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("1_cloud_zone")
+
+[node name="Visual" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_cloud")
+transparency = 0.5
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape_cloud")

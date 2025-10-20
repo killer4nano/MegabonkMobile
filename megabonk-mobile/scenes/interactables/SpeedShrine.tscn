@@ -1,0 +1,11 @@
+[gd_scene load_steps=2 format=3 uid="uid://b9m7k4n1p6h2y"]
+
+[ext_resource type="PackedScene" uid="uid://dsf7k2n4m9p1q" path="res://scenes/interactables/BaseShrine.tscn" id="1_base"]
+[ext_resource type="Script" path="res://scripts/interactables/SpeedShrine.gd" id="2_speed"]
+
+[node name="SpeedShrine" instance=ExtResource("1_base")]
+script = ExtResource("2_speed")
+shrine_name = "Speed Shrine"
+cost = 75
+buff_duration = 60.0
+shrine_color = Color(0, 0.5, 1, 1)

@@ -1,0 +1,29 @@
+[gd_scene load_steps=4 format=3 uid="uid://c1v8yb3nq2h4p"]
+
+[ext_resource type="Script" path="res://scripts/pickups/GoldCoin.gd" id="1_1n5g2"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_1"]
+albedo_color = Color(1, 0.843137, 0, 1)
+metallic = 0.8
+roughness = 0.2
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_1"]
+radius = 0.3
+
+[node name="GoldCoin" type="Area3D"]
+collision_layer = 8
+collision_mask = 1
+script = ExtResource("1_1n5g2")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
+material_override = SubResource("StandardMaterial3D_1")
+
+[node name="CylinderMesh" type="CylinderMesh" parent="Mesh"]
+material = SubResource("StandardMaterial3D_1")
+height = 0.1
+radial_segments = 16
+rings = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_1")

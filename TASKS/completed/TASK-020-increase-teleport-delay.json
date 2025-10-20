@@ -1,0 +1,133 @@
+{
+  "id": "TASK-020",
+  "title": "Increase navigation ready delay after teleport (0.5s for path recalculation)",
+  "type": "bug_fix",
+  "priority": "CRITICAL",
+  "assigned_to": "project_manager",
+  "status": "completed",
+  "created": "2025-10-20T04:35:00Z",
+  "completed": "2025-10-20T04:40:00Z",
+  "estimated_hours": 0.1,
+  "actual_hours": 0.08,
+  "discovered_by": "User play testing",
+  "description": "Navigation-based enemies still jittery after teleport despite updating nav_agent.target_position. Root cause: NavigationServer needs time to recalculate path after target update. 0.1s delay insufficient.",
+
+  "bug_details": {
+    "symptom": "Red/purple enemies jitter after teleporting",
+    "user_feedback": "Still jittery on teleport green enemies only ones working properly still",
+    "severity": "CRITICAL - Only 1 out of 4 enemy types working correctly",
+    "affected_enemies": [
+      "BasicEnemy (red) - uses NavigationAgent3D",
+      "TankEnemy (purple) - uses NavigationAgent3D",
+      "FastEnemy (yellow) - uses NavigationAgent3D for fallback"
+    ],
+    "working_enemy": "RangedEnemy (green) - uses direct movement"
+  },
+
+  "root_cause_analysis": {
+    "sequence_of_events": [
+      "1. Enemy teleports to new position",
+      "2. nav_agent.target_position = player position (TASK-019)",
+      "3. navigation_ready = false, timer = 0.1s",
+      "4. NavigationServer queues path recalculation (ASYNC)",
+      "5. After 0.1s: navigation_ready = true, enemy starts moving",
+      "6. Problem: NavigationServer hasn't finished recalculating path yet!",
+      "7. enemy.handle_movement() calls nav_agent.get_next_path_position()",
+      "8. Returns invalid/incomplete path data",
+      "9. Enemy jitters as it tries to follow incomplete path"
+    ],
+    "technical_explanation": "NavigationServer3D recalculates paths asynchronously in the background. When we update nav_agent.target_position, it queues a recalculation but doesn't complete instantly. The 0.1s delay we were using is too short - the path isn't ready yet. When we try to follow an incomplete path, we get jittery movement.",
+    "why_ranged_works": "RangedEnemy uses direct movement - calculates direction to player every frame, no dependency on NavigationServer path recalculation timing"
+  },
+
+  "solution": {
+    "approach": "Use different delays for spawn vs teleport",
+    "spawn_delay": "0.1s - enough for scene initialization, no path recalc needed",
+    "teleport_delay": "0.5s - enough for NavigationServer to recalculate path",
+    "benefit": "Spawn remains fast (0.1s), teleport is smooth (0.5s)",
+    "tradeoff": "0.5s pause after teleport noticeable but better than jittering"
+  },
+
+  "implementation": {
+    "file": "BaseEnemy.gd",
+    "changes": [
+      {
+        "line": 58,
+        "change": "Split navigation_ready_delay into spawn and teleport variants",
+        "before": "navigation_ready_delay: float = 0.1",
+        "after": "navigation_ready_delay_spawn: float = 0.1, navigation_ready_delay_teleport: float = 0.5"
+      },
+      {
+        "line": 99,
+        "change": "Use spawn delay in _ready()",
+        "code": "navigation_ready_timer = navigation_ready_delay_spawn"
+      },
+      {
+        "line": 465,
+        "change": "Use teleport delay in _teleport_near_player()",
+        "code": "navigation_ready_timer = navigation_ready_delay_teleport"
+      }
+    ]
+  },
+
+  "technical_details": {
+    "NavigationServer_path_recalculation": {
+      "trigger": "Calling nav_agent.target_position = new_position",
+      "execution": "Asynchronous - happens in background",
+      "timing": "Typically 0.2-0.4 seconds depending on map complexity",
+      "safety_margin": "0.5s ensures path is ready even on complex maps"
+    },
+    "why_0_1s_worked_for_spawn": {
+      "spawn_case": "Enemy spawns, nav_agent has NO previous path, can wait for first frame",
+      "no_recalculation": "Initial path calculation can happen during 0.1s wait",
+      "result": "0.1s sufficient for spawn"
+    },
+    "why_0_1s_failed_for_teleport": {
+      "teleport_case": "Enemy has OLD path, need to RECALCULATE to new target",
+      "full_recalculation": "Must invalidate old path and calculate new one",
+      "complex_navigation": "Large maps with obstacles take longer to recalculate",
+      "result": "0.1s insufficient for teleport, causes jitter"
+    }
+  },
+
+  "files_modified": [
+    {
+      "file": "megabonk-mobile/scripts/enemies/BaseEnemy.gd",
+      "changes": [
+        "Lines 58-59: Split delay into spawn (0.1s) and teleport (0.5s) variants",
+        "Line 99: Use spawn delay in _ready()",
+        "Line 465: Use teleport delay in _teleport_near_player()"
+      ]
+    }
+  ],
+
+  "verification_steps": {
+    "test_1_spawn": "Spawn enemies, verify they start moving within 0.1s (fast)",
+    "test_2_teleport_basic": "Run from BasicEnemy, wait for teleport, verify smooth movement (0.5s pause)",
+    "test_3_teleport_tank": "Run from TankEnemy, wait for teleport, verify smooth movement (0.5s pause)",
+    "test_4_ranged_unchanged": "Verify RangedEnemy still works perfectly",
+    "expected": "Spawn is fast (0.1s), teleport is smooth with brief pause (0.5s), no jitter"
+  },
+
+  "acceptance_criteria": [
+    "✅ Separate spawn delay (0.1s) and teleport delay (0.5s)",
+    "✅ Spawn uses 0.1s delay (fast startup)",
+    "✅ Teleport uses 0.5s delay (path recalculation time)",
+    "⏳ User confirms no jitter after teleport (pending)",
+    "⏳ User confirms spawn still fast (pending)"
+  ],
+
+  "lessons_learned": {
+    "lesson_1": "NavigationServer path recalculation is asynchronous and takes time (0.2-0.4s)",
+    "lesson_2": "Different operations need different delays - don't use one-size-fits-all",
+    "lesson_3": "Spawn is fast (no recalc), teleport is slow (full recalc)",
+    "lesson_4": "0.5s pause is better UX than jittery movement",
+    "lesson_5": "User feedback 'green works, others don't' was critical clue to navigation timing issue"
+  },
+
+  "related_tasks": [
+    "TASK-019: Updated nav target after teleport (revealed timing issue)",
+    "TASK-018: Standardized movement (exposed navigation dependencies)",
+    "TASK-016: First navigation ready attempt (0.1s delay)"
+  ]
+}

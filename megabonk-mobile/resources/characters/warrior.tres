@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://resources/characters/CharacterData.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+character_id = "warrior"
+character_name = "Warrior"
+description = "A balanced fighter ready for any challenge. Excels with melee weapons."
+character_color = Color(0.8, 0.2, 0.2, 1)
+max_health = 100.0
+move_speed = 5.0
+base_damage = 10.0
+pickup_range = 3.0
+passive_name = "Melee Mastery"
+passive_description = "+20% damage with orbital weapons"
+damage_reduction = 0.0
+melee_damage_bonus = 0.2
+ranged_damage_bonus = 0.0
+crit_chance_bonus = 0.0
+crit_damage_bonus = 0.0
+xp_multiplier = 1.0
+extra_starting_weapons = 0
+starting_weapon_id = "bonk_hammer"
+unlock_cost = 0
+is_starter = true

@@ -1,0 +1,38 @@
+[gd_scene load_steps=8 format=3 uid="uid://p7r9c2m4n5k8x"]
+
+[ext_resource type="Script" path="res://scripts/maps/ProceduralMapGenerator.gd" id="1_generator"]
+[ext_resource type="PackedScene" uid="uid://dho5nhabi6q0i" path="res://scenes/player/Player.tscn" id="2_player"]
+[ext_resource type="PackedScene" uid="uid://bvxqvw7vm3qxc" path="res://scenes/ui/TouchControls.tscn" id="3_touch"]
+[ext_resource type="Script" uid="uid://ctjp37vquwyu5" path="res://scripts/managers/GameManager.gd" id="4_manager"]
+[ext_resource type="Script" uid="uid://u2p27yk6fgyw" path="res://scripts/managers/WaveManager.gd" id="5_wave"]
+[ext_resource type="PackedScene" uid="uid://br7j8k2v3m4n5" path="res://scenes/ui/HUD.tscn" id="6_hud"]
+[ext_resource type="PackedScene" uid="uid://c5vmqj8h7dpn8" path="res://scenes/ui/UpgradeScreen.tscn" id="7_upgrade"]
+
+[node name="ProceduralArena" type="Node3D"]
+
+[node name="ProceduralMapGenerator" type="Node3D" parent="."]
+script = ExtResource("1_generator")
+arena_size_min = 600
+arena_size_max = 1000
+obstacle_count_min = 80
+obstacle_count_max = 180
+min_obstacle_spacing = 10.0
+center_clearance_radius = 30.0
+use_seed = false
+generation_seed = 0
+randomize_colors = true
+
+[node name="GameManager" type="Node" parent="."]
+script = ExtResource("4_manager")
+
+[node name="WaveManager" type="Node" parent="."]
+script = ExtResource("5_wave")
+
+[node name="Player" parent="." groups=["player"] instance=ExtResource("2_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="TouchControls" parent="." instance=ExtResource("3_touch")]
+
+[node name="HUD" parent="." instance=ExtResource("6_hud")]
+
+[node name="UpgradeScreen" parent="." instance=ExtResource("7_upgrade")]

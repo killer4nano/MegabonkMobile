@@ -1,0 +1,36 @@
+[gd_scene load_steps=6 format=3 uid="uid://dyat06p3v5owy"]
+
+[ext_resource type="PackedScene" uid="uid://dj4w5b8y9x2pq" path="res://scenes/enemies/BaseEnemy.tscn" id="1_base"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_tank"]
+radius = 0.7
+height = 2.5
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tank"]
+albedo_color = Color(0.3, 0.2, 0.6, 1)
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_tank"]
+radius = 0.7
+height = 2.5
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_attack_tank"]
+radius = 1.5
+
+[node name="TankEnemy" instance=ExtResource("1_base")]
+max_health = 150.0
+move_speed = 1.5
+damage = 20.0
+xp_value = 30.0
+
+[node name="Body" parent="." index="0"]
+mesh = SubResource("CapsuleMesh_tank")
+surface_material_override/0 = SubResource("StandardMaterial3D_tank")
+
+[node name="CollisionShape3D" parent="." index="1"]
+shape = SubResource("CapsuleShape3D_tank")
+
+[node name="NavigationAgent3D" parent="." index="2"]
+max_speed = 1.5
+
+[node name="CollisionShape3D" parent="AttackRange" index="0"]
+shape = SubResource("SphereShape3D_attack_tank")

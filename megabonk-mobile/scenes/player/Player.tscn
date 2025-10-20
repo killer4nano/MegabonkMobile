@@ -1,0 +1,44 @@
+[gd_scene load_steps=7 format=3 uid="uid://dho5nhabi6q0i"]
+
+[ext_resource type="Script" uid="uid://cawfrobi6b5so" path="res://scripts/player/PlayerController.gd" id="1_wr5hl"]
+[ext_resource type="Script" path="res://scripts/managers/WeaponManager.gd" id="2_weapon_mgr"]
+[ext_resource type="PackedScene" uid="uid://bv7qp3xw8yjrm" path="res://scenes/weapons/BonkHammer.tscn" id="3_bonk_hammer"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_gfjak"]
+height = 1.8
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_4kuee"]
+height = 1.8
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_pickup"]
+radius = 3.0
+
+[node name="Player" type="CharacterBody3D"]
+script = ExtResource("1_wr5hl")
+
+[node name="Body" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+mesh = SubResource("CapsuleMesh_gfjak")
+
+[node name="CollisionShape" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_4kuee")
+
+[node name="CameraArm" type="SpringArm3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 2.5, 0)
+spring_length = 10.0
+
+[node name="Camera3D" type="Camera3D" parent="CameraArm"]
+
+[node name="WeaponManager" type="Node3D" parent="."]
+script = ExtResource("2_weapon_mgr")
+
+[node name="BonkHammer" parent="WeaponManager" instance=ExtResource("3_bonk_hammer")]
+
+[node name="PlayerPickupArea" type="Area3D" parent="."]
+collision_layer = 1
+collision_mask = 4
+monitorable = false
+
+[node name="PickupCollisionShape" type="CollisionShape3D" parent="PlayerPickupArea"]
+shape = SubResource("SphereShape3D_pickup")

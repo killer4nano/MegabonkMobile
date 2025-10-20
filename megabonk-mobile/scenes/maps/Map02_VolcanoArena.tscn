@@ -1,0 +1,153 @@
+[gd_scene load_steps=17 format=3 uid="uid://d7xqvw9vm5rya"]
+
+[ext_resource type="PackedScene" uid="uid://dho5nhabi6q0i" path="res://scenes/player/Player.tscn" id="1_arena"]
+[ext_resource type="PackedScene" uid="uid://bvxqvw7vm3qxc" path="res://scenes/ui/TouchControls.tscn" id="2_touch"]
+[ext_resource type="Script" uid="uid://ctjp37vquwyu5" path="res://scripts/managers/GameManager.gd" id="3_manager"]
+[ext_resource type="Script" uid="uid://u2p27yk6fgyw" path="res://scripts/managers/WaveManager.gd" id="4_wave"]
+[ext_resource type="PackedScene" uid="uid://br7j8k2v3m4n5" path="res://scenes/ui/HUD.tscn" id="5_hud"]
+[ext_resource type="PackedScene" uid="uid://c5vmqj8h7dpn8" path="res://scenes/ui/UpgradeScreen.tscn" id="6_upgrade"]
+[ext_resource type="PackedScene" uid="uid://c2h9m5n7p3k1x" path="res://scenes/interactables/HealthShrine.tscn" id="7_health_shrine"]
+[ext_resource type="PackedScene" uid="uid://d3k8n6p2m5h9x" path="res://scenes/interactables/DamageShrine.tscn" id="8_damage_shrine"]
+[ext_resource type="PackedScene" uid="uid://b9m7k4n1p6h2y" path="res://scenes/interactables/SpeedShrine.tscn" id="9_speed_shrine"]
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_volcano"]
+vertices = PackedVector3Array(-30, 0.5, -30, -30, 0.5, 30, 30, 0.5, 30, 30, 0.5, -30)
+polygons = [PackedInt32Array(3, 2, 0), PackedInt32Array(0, 2, 1)]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_volcano"]
+size = Vector2(60, 60)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_volcano_ground"]
+albedo_color = Color(0.2, 0.15, 0.15, 1)
+roughness = 0.8
+metallic = 0.1
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_volcano"]
+size = Vector3(60, 0.1, 60)
+
+[sub_resource type="BoxMesh" id="BoxMesh_volcano_rock"]
+size = Vector3(3, 2, 3)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_volcano_rock"]
+albedo_color = Color(0.15, 0.1, 0.1, 1)
+roughness = 1.0
+
+[sub_resource type="Environment" id="Environment_volcano"]
+background_mode = 1
+background_color = Color(0.3, 0.2, 0.2, 1)
+ambient_light_source = 2
+ambient_light_color = Color(1, 0.6, 0.4, 1)
+tonemap_mode = 2
+glow_enabled = true
+glow_intensity = 0.3
+glow_strength = 0.8
+glow_blend_mode = 0
+
+[node name="Map02_VolcanoArena" type="Node3D"]
+
+[node name="GameManager" type="Node" parent="."]
+script = ExtResource("3_manager")
+
+[node name="WaveManager" type="Node" parent="."]
+script = ExtResource("4_wave")
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+navigation_mesh = SubResource("NavigationMesh_volcano")
+
+[node name="Ground" type="StaticBody3D" parent="NavigationRegion3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="NavigationRegion3D/Ground"]
+mesh = SubResource("PlaneMesh_volcano")
+surface_material_override/0 = SubResource("StandardMaterial3D_volcano_ground")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavigationRegion3D/Ground"]
+shape = SubResource("BoxShape3D_volcano")
+
+[node name="Obstacles" type="Node3D" parent="NavigationRegion3D"]
+
+[node name="Rock1" type="MeshInstance3D" parent="NavigationRegion3D/Obstacles"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 1, 15)
+mesh = SubResource("BoxMesh_volcano_rock")
+surface_material_override/0 = SubResource("StandardMaterial3D_volcano_rock")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="NavigationRegion3D/Obstacles/Rock1"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavigationRegion3D/Obstacles/Rock1/StaticBody3D"]
+shape = SubResource("BoxShape3D_volcano")
+
+[node name="Rock2" type="MeshInstance3D" parent="NavigationRegion3D/Obstacles"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 1, 15)
+mesh = SubResource("BoxMesh_volcano_rock")
+surface_material_override/0 = SubResource("StandardMaterial3D_volcano_rock")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="NavigationRegion3D/Obstacles/Rock2"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavigationRegion3D/Obstacles/Rock2/StaticBody3D"]
+shape = SubResource("BoxShape3D_volcano")
+
+[node name="Rock3" type="MeshInstance3D" parent="NavigationRegion3D/Obstacles"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 1, -15)
+mesh = SubResource("BoxMesh_volcano_rock")
+surface_material_override/0 = SubResource("StandardMaterial3D_volcano_rock")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="NavigationRegion3D/Obstacles/Rock3"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavigationRegion3D/Obstacles/Rock3/StaticBody3D"]
+shape = SubResource("BoxShape3D_volcano")
+
+[node name="Rock4" type="MeshInstance3D" parent="NavigationRegion3D/Obstacles"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -15, 1, -15)
+mesh = SubResource("BoxMesh_volcano_rock")
+surface_material_override/0 = SubResource("StandardMaterial3D_volcano_rock")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="NavigationRegion3D/Obstacles/Rock4"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavigationRegion3D/Obstacles/Rock4/StaticBody3D"]
+shape = SubResource("BoxShape3D_volcano")
+
+[node name="Rock5" type="MeshInstance3D" parent="NavigationRegion3D/Obstacles"]
+transform = Transform3D(0.8, 0, 0, 0, 1.2, 0, 0, 0, 0.8, 0, 1, 20)
+mesh = SubResource("BoxMesh_volcano_rock")
+surface_material_override/0 = SubResource("StandardMaterial3D_volcano_rock")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="NavigationRegion3D/Obstacles/Rock5"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavigationRegion3D/Obstacles/Rock5/StaticBody3D"]
+shape = SubResource("BoxShape3D_volcano")
+
+[node name="Rock6" type="MeshInstance3D" parent="NavigationRegion3D/Obstacles"]
+transform = Transform3D(0.8, 0, 0, 0, 1.2, 0, 0, 0, 0.8, 0, 1, -20)
+mesh = SubResource("BoxMesh_volcano_rock")
+surface_material_override/0 = SubResource("StandardMaterial3D_volcano_rock")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="NavigationRegion3D/Obstacles/Rock6"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="NavigationRegion3D/Obstacles/Rock6/StaticBody3D"]
+shape = SubResource("BoxShape3D_volcano")
+
+[node name="Player" parent="." groups=["player"] instance=ExtResource("1_arena")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 15, 0)
+light_color = Color(1, 0.7, 0.5, 1)
+light_energy = 1.2
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_volcano")
+
+[node name="TouchControls" parent="." instance=ExtResource("2_touch")]
+
+[node name="HUD" parent="." instance=ExtResource("5_hud")]
+
+[node name="UpgradeScreen" parent="." instance=ExtResource("6_upgrade")]
+
+[node name="HealthShrine" parent="." instance=ExtResource("7_health_shrine")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12, 0, 0)
+
+[node name="DamageShrine" parent="." instance=ExtResource("8_damage_shrine")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, 0, 0)
+
+[node name="SpeedShrine" parent="." instance=ExtResource("9_speed_shrine")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 12)

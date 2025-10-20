@@ -1,0 +1,132 @@
+{
+  "id": "TASK-005",
+  "title": "Create procedurally generated map system",
+  "type": "content_creation",
+  "priority": "HIGH",
+  "assigned_to": "content_creator_agent",
+  "status": "completed",
+  "created": "2025-10-19T21:30:00Z",
+  "estimated_hours": 5,
+  "dependencies": [],
+  "blocking": [
+    "MVP_LAUNCH"
+  ],
+  "description": "Create a procedurally generated map system that creates unique arenas each playthrough. First map (TestArena) is static - fine for testing. Second map needs to be procedurally generated for replayability. Generate random obstacles, layout variations, spawn points, etc. Each game session should feel fresh and different.",
+  "user_requirement": "Make sure it's procedurally generated and not the same everytime. The first was just a test arena so that was fine. But now we are working on an actual map.",
+  "acceptance_criteria": [
+    "Procedural map generator script created (ProceduralMapGenerator.gd)",
+    "Map generates unique layout each time game starts/restarts",
+    "Random obstacle placement (rocks, pillars, walls, barriers)",
+    "Random arena shape variation (circular, square, organic shapes)",
+    "Player spawn point always in safe center area",
+    "Enemy spawn zones dynamically calculated around perimeter",
+    "NavigationRegion3D regenerated and baked at runtime for pathfinding",
+    "Varied visual themes (randomize colors, materials per run)",
+    "Map remains playable and balanced regardless of generation seed",
+    "Performance acceptable on mobile (<100 obstacles, simple meshes)",
+    "No dead-ends or unreachable areas (validate pathfinding)"
+  ],
+  "technical_details": {
+    "files_to_create": [
+      "megabonk-mobile/scripts/maps/ProceduralMapGenerator.gd",
+      "megabonk-mobile/scenes/maps/ProceduralArena.tscn (container scene)",
+      "megabonk-mobile/scenes/maps/prefabs/ObstaclePillar.tscn (optional)",
+      "megabonk-mobile/scenes/maps/prefabs/ObstacleRock.tscn (optional)"
+    ],
+    "files_to_modify": [
+      "megabonk-mobile/scripts/managers/GameManager.gd (load procedural map)",
+      "megabonk-mobile/scenes/levels/GameWorld.tscn (integrate procedural arena)"
+    ],
+    "procedural_generation_requirements": [
+      "Use RandomNumberGenerator (RNG) for all random decisions",
+      "Optional: Allow seed input for reproducible maps (debug/testing)",
+      "Generate base arena floor (40x40m to 60x60m, randomize size)",
+      "Randomly place 8-20 obstacles using CSGBox3D/CSGCylinder3D/CSGSphere3D",
+      "Use grid-based or poisson disc sampling for obstacle placement",
+      "Ensure minimum distance between obstacles (2-3m) to avoid clustering",
+      "Ensure clear path from center to all perimeter points (no blocking)",
+      "Generate NavigationMesh at runtime using NavigationServer3D",
+      "Randomize floor color using StandardMaterial3D.albedo_color",
+      "Randomize obstacle colors for visual variety",
+      "Create boundaries (walls or kill zones) to contain playspace",
+      "Calculate 8-12 enemy spawn zones evenly distributed around perimeter"
+    ],
+    "generation_algorithm": {
+      "step_1": "Initialize RNG with random or provided seed",
+      "step_2": "Generate arena size (randi_range(40, 60) for width/depth)",
+      "step_3": "Create floor plane (CSGBox3D or MeshInstance3D)",
+      "step_4": "Place player spawn in exact center (Vector3(0, 0, 0))",
+      "step_5": "Generate obstacle count (randi_range(8, 20))",
+      "step_6": "Place obstacles using grid or random scatter, validate spacing",
+      "step_7": "Validate pathfinding: ensure all perimeter points reachable from center",
+      "step_8": "Create boundary walls (4 walls around perimeter)",
+      "step_9": "Build NavigationMesh using NavigationServer3D API",
+      "step_10": "Apply random materials (randomize hue/saturation)",
+      "step_11": "Calculate enemy spawn zones (8 points around perimeter circle)",
+      "step_12": "Emit map_generated signal for GameManager"
+    },
+    "godot_apis_to_use": [
+      "RandomNumberGenerator for all randomization",
+      "CSGBox3D/CSGCylinder3D for procedural obstacles (fast, no separate meshes)",
+      "NavigationServer3D.map_create() for runtime navmesh",
+      "NavigationServer3D.region_create() and region_set_navigation_mesh()",
+      "StandardMaterial3D for randomized colors",
+      "StaticBody3D for obstacle physics"
+    ],
+    "example_obstacle_generation": {
+      "code_snippet": "for i in range(obstacle_count):\n    var pos = _generate_valid_position()\n    var obstacle = CSGBox3D.new()\n    obstacle.size = Vector3(2, 3, 2)  # Random sizes\n    obstacle.global_position = pos\n    add_child(obstacle)"
+    }
+  },
+  "design_suggestions": {
+    "arena_shapes": [
+      "Circular (best for balanced gameplay)",
+      "Square with rounded corners",
+      "Organic blob shape (randomized edges)"
+    ],
+    "obstacle_types": [
+      "Tall pillars (CSGCylinder3D, height 3-5m, radius 0.5-1m)",
+      "Short walls (CSGBox3D, height 1-2m, length 3-6m)",
+      "Rock clusters (CSGSphere3D, clustered 2-4 together)",
+      "Mixed: combine types for variety"
+    ],
+    "color_themes": [
+      "Desert: orange/yellow floor, brown obstacles",
+      "Ice: blue/white floor, cyan obstacles",
+      "Lava: red/black floor, orange obstacles",
+      "Forest: green floor, brown/green obstacles",
+      "Random: pick random hue each run"
+    ],
+    "performance_optimization": [
+      "Use CSG nodes (faster than MeshInstance3D with preloaded meshes)",
+      "Limit obstacle count to 20 maximum",
+      "Use simple shapes only (box, cylinder, sphere)",
+      "No complex physics - obstacles are static",
+      "Bake NavMesh once after generation, not every frame"
+    ]
+  },
+  "validation_requirements": {
+    "pathfinding_check": "Ensure NavigationServer3D can find path from center to all 8 perimeter spawn zones",
+    "spacing_check": "No obstacles within 5m of player spawn point",
+    "clustering_check": "Minimum 2m distance between any two obstacles",
+    "boundary_check": "Player cannot fall off edges or leave arena"
+  },
+  "test_commands": [
+    "godot --path megabonk-mobile res://scenes/maps/ProceduralArena.tscn",
+    "# Test multiple runs to verify randomness",
+    "# Test pathfinding works for all enemy types",
+    "# Test performance with max obstacle count"
+  ],
+  "knowledge_required": [
+    "megabonk-mobile/CLAUDE.md - Project architecture",
+    "Godot 4.x NavigationServer3D API for runtime navmesh",
+    "Godot CSG nodes for procedural geometry",
+    "Procedural generation techniques (grid-based, poisson disc)",
+    "Mobile performance optimization"
+  ],
+  "expected_outcome": "Functional procedural map generator that creates unique, playable arenas each run. Adds massive replayability to the game. Maps are balanced, performant on mobile, and support enemy AI pathfinding.",
+  "progress": {
+    "percentage": 100,
+    "last_update": "2025-10-19T23:00:00Z",
+    "notes": "Completed - ProceduralMapGenerator.gd created with full feature set including random obstacles, color themes, navigation mesh, spawn zones, and pathfinding validation. WaveManager updated to support procedural spawn zones. Documentation created."
+  }
+}

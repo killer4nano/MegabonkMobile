@@ -1,0 +1,43 @@
+[gd_scene load_steps=5 format=3 uid="uid://c8h5lam2p7q3r"]
+
+[ext_resource type="Script" path="res://scripts/levels/ExtractionZone.gd" id="1_extraction_zone_script"]
+
+[sub_resource type="CylinderShape3D" id="CylinderShape3D_collision"]
+height = 3.0
+radius = 3.0
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_visual"]
+top_radius = 3.0
+bottom_radius = 3.0
+height = 3.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_extraction"]
+transparency = 1
+albedo_color = Color(0.3, 0.7, 1, 0.5)
+emission_enabled = true
+emission = Color(0.2, 0.5, 1, 1)
+emission_energy_multiplier = 2.0
+
+[node name="ExtractionZone" type="Node3D"]
+script = ExtResource("1_extraction_zone_script")
+
+[node name="Area3D" type="Area3D" parent="."]
+collision_layer = 1
+collision_mask = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D"]
+shape = SubResource("CylinderShape3D_collision")
+
+[node name="VisualMesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("CylinderMesh_visual")
+surface_material_override/0 = SubResource("StandardMaterial3D_extraction")
+
+[node name="CountdownLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+pixel_size = 0.01
+billboard = 1
+modulate = Color(1, 1, 0, 1)
+text = "Extracting..."
+font_size = 64
+outline_size = 8
+outline_modulate = Color(0, 0, 0, 1)

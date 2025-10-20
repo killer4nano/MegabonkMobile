@@ -1,0 +1,1121 @@
+================================================================================
+MEGABONK-STYLE MOBILE EXTRACTION ROGUELITE - GAME DEVELOPMENT PLAN
+================================================================================
+Project: Mobile Roguelite Extraction Game (Godot Engine)
+Platform: iOS & Android
+Inspired by: Megabonk + Vampire Survivors + Extraction Mechanics
+Date Created: 2025-10-19
+
+================================================================================
+GAME CONCEPT OVERVIEW
+================================================================================
+
+Core Concept:
+A 3D third-person auto-shooter roguelite with extraction mechanics where
+players survive waves of enemies, collect loot, and choose when to extract
+(risk vs reward).
+
+Key Features:
+- 3D third-person perspective (over-shoulder view)
+- Auto-attacking weapons and abilities
+- Wave-based enemy spawning with escalating difficulty
+- XP and level-up system with random upgrade choices
+- Extraction system: Extract early (safe) or stay longer (risky but rewarding)
+- Meta-progression: Permanent unlocks from successful extractions
+- Death penalty: Lose all run loot if you die before extracting
+- 10+ characters with unique abilities
+- 20+ auto-attacking weapons
+- 50+ upgrades and synergies
+- Mobile-optimized touch controls
+
+================================================================================
+PHASE 1: PROJECT SETUP & FOUNDATION (Week 1-2)
+================================================================================
+
+1.1 Godot Mobile Setup
+----------------------
+- Install Godot 4.3+ (recommended for mobile development)
+- Download and configure Android export templates
+- Download and configure iOS export templates
+- Set up mobile project settings:
+  * Configure touch input settings
+  * Set up resolution scaling for various screen sizes
+  * Configure orientation (landscape recommended)
+  * Set up adaptive icons for Android
+  * Configure iOS app icons and launch screens
+
+1.2 Project Structure
+--------------------
+Create the following directory structure:
+
+project/
+├── scenes/
+│   ├── player/
+│   │   ├── Player.tscn
+│   │   └── PlayerController.gd
+│   ├── enemies/
+│   │   ├── BaseEnemy.tscn
+│   │   ├── FastEnemy.tscn
+│   │   ├── TankEnemy.tscn
+│   │   └── MiniBoss.tscn
+│   ├── weapons/
+│   │   ├── BaseWeapon.tscn
+│   │   └── weapon_instances/
+│   ├── items/
+│   │   └── Pickup.tscn
+│   ├── levels/
+│   │   ├── Arena_01.tscn
+│   │   └── ExtractionZone.tscn
+│   └── ui/
+│       ├── HUD.tscn
+│       ├── MainMenu.tscn
+│       ├── UpgradeScreen.tscn
+│       └── TouchControls.tscn
+├── scripts/
+│   ├── managers/
+│   │   ├── GameManager.gd
+│   │   ├── LootManager.gd
+│   │   ├── WaveManager.gd
+│   │   └── ExtractionManager.gd
+│   ├── systems/
+│   │   ├── ProgressionSystem.gd
+│   │   ├── ExtractionSystem.gd
+│   │   ├── WeaponSystem.gd
+│   │   └── UpgradeSystem.gd
+│   └── autoload/
+│       ├── GlobalData.gd
+│       ├── SaveSystem.gd
+│       └── EventBus.gd
+├── resources/
+│   ├── weapons/
+│   │   └── WeaponData.gd (Resource script)
+│   ├── upgrades/
+│   │   └── UpgradeData.gd (Resource script)
+│   ├── characters/
+│   │   └── CharacterData.gd (Resource script)
+│   └── enemies/
+│       └── EnemyData.gd (Resource script)
+├── assets/
+│   ├── models/
+│   ├── textures/
+│   ├── audio/
+│   │   ├── music/
+│   │   └── sfx/
+│   └── vfx/
+└── addons/
+
+1.3 Core Singleton Setup (Autoload)
+-----------------------------------
+Create the following autoloaded singletons:
+
+- GlobalData.gd: Store global game state, settings, unlocks
+- SaveSystem.gd: Handle saving/loading player progression
+- EventBus.gd: Central event system for decoupled communication
+
+================================================================================
+PHASE 2: CORE GAMEPLAY LOOP (Week 3-5)
+================================================================================
+
+2.1 Player Controller (Mobile-Optimized)
+-----------------------------------------
+Features:
+- Third-person camera following player
+- Movement system (choose one):
+  * Virtual joystick (left side of screen)
+  * Tap-to-move alternative control scheme
+- Auto-rotation to face movement direction
+- Character stats system:
+  * Health Points (HP)
+  * Movement Speed
+  * Damage Multiplier
+  * Critical Hit Chance
+  * Critical Hit Damage
+  * Pickup Range (for XP/gold)
+  * Health Regeneration
+
+Implementation Notes:
+- Use CharacterBody3D for player
+- Implement smooth camera follow with SpringArm3D
+- Mobile input detection (touch vs mouse for testing)
+- Collision detection for environment
+
+2.2 Enemy System
+----------------
+Enemy Types (Minimum for MVP):
+1. Basic Enemy: Standard speed, standard health
+2. Fast Enemy: High speed, low health, deals less damage
+3. Tank Enemy: Slow speed, high health, deals more damage
+4. Mini-Boss: Spawns at intervals, high stats, drops bonus XP
+5. Final Boss: Appears at 10 minutes (if player survives)
+
+Features:
+- Wave spawning system with escalating difficulty
+- Enemy pathfinding using NavigationAgent3D
+- Attack AI (melee vs ranged)
+- Death animations and XP drop
+- Enemy pooling for performance
+
+Wave System:
+- Spawn rate increases over time
+- Enemy count increases over time
+- Stronger enemies appear in later waves
+- Mini-bosses spawn every 2-3 minutes
+- Difficulty spikes at 3min, 6min, 9min marks
+
+2.3 XP & Leveling System
+------------------------
+Mechanics:
+- Enemies drop XP orbs on death
+- XP orbs auto-collect when player is nearby (magnetic pull)
+- XP bar fills up, level up triggers when full
+- On level up:
+  * Pause the game
+  * Show upgrade selection screen
+  * Display 3-4 random upgrades from pool
+  * Upgrades have rarity (Common, Rare, Epic, Legendary)
+  * Player chooses one upgrade
+  * Resume game with new power
+
+Upgrade Pool Categories:
+- New weapons
+- Weapon upgrades (increase damage, projectile count, etc.)
+- Stat boosts (HP, speed, crit chance)
+- Passive abilities (regen, thorns, lifesteal)
+- Utility (pickup range, cooldown reduction)
+
+2.4 Weapons & Abilities (Auto-Cast)
+------------------------------------
+Starting Weapon:
+- Basic melee bonk or simple projectile
+
+Weapon Types (20+ for full game, 5 for MVP):
+1. Orbit Weapons: Objects that circle the player
+   - Example: Spinning hammers, orbiting swords
+2. Projectile Weapons: Auto-fire at nearest enemies
+   - Example: Magic missiles, bullets, boomerangs
+3. AOE Weapons: Periodic area-of-effect damage
+   - Example: Ground slam, shockwave, lightning strike
+4. Beam Weapons: Continuous damage to enemies
+   - Example: Laser beam, flame stream
+5. Zone Weapons: Create damage zones
+   - Example: Fire pools, poison clouds
+
+Weapon Mechanics:
+- All weapons auto-cast/auto-attack
+- Each weapon has cooldown, damage, range
+- Weapons can be upgraded multiple times
+- Synergies: Certain weapon combos create bonus effects
+- Maximum weapon slots (e.g., 6-8 active weapons)
+
+Weapon Resource Script Properties:
+- weapon_name: String
+- weapon_type: Enum (Orbit, Projectile, AOE, Beam, Zone)
+- base_damage: float
+- attack_speed: float (attacks per second)
+- projectile_count: int
+- range: float
+- icon: Texture2D
+
+================================================================================
+PHASE 3: EXTRACTION MECHANICS (Week 6-7)
+================================================================================
+
+3.1 The Extraction Twist
+-------------------------
+Key Difference from Standard Megabonk:
+Instead of just surviving 10 minutes, players can choose to extract early.
+
+Extraction Rules:
+1. Extraction Points spawn periodically (every 2-3 minutes)
+2. Visual indicator shows extraction zone on map and minimap
+3. Player enters extraction zone
+4. 5-second countdown begins (must survive while extracting)
+5. Successful extraction = keep all loot from run
+6. Death before extraction = lose ALL run loot
+
+Risk/Reward System:
+- Extract at 3 minutes: Low loot, safe escape, small multiplier
+- Extract at 6 minutes: Medium loot, moderate danger, 1.5x multiplier
+- Extract at 9 minutes: High loot, very dangerous, 2x multiplier
+- Survive 10 minutes + extract: Maximum loot, 3x multiplier
+
+3.2 Loot System
+---------------
+During Run:
+- Gold: Dropped by enemies, used in mid-run shops
+- XP: Used for leveling up during run
+- Temporary items: Lost if you die
+
+After Successful Extraction:
+- Extraction Currency (e.g., "Essence"): Permanent currency
+- Run score/rating (based on time survived, enemies killed)
+- Quest progress
+- Unlock progress
+
+Extraction Currency Uses:
+- Unlock new characters
+- Unlock new weapons to appear in runs
+- Unlock new upgrades to appear in runs
+- Unlock new maps
+- Permanent stat boosts (small bonuses)
+
+3.3 Implementation Details
+---------------------------
+ExtractionZone.tscn:
+- Area3D for detection
+- Visual effects (glowing portal, beam of light)
+- UI countdown timer when player enters
+- Spawn at predetermined locations on map
+- Spawn timing controlled by ExtractionManager
+
+Death Handling:
+- On player death, show death screen
+- Display run statistics (time survived, kills, gold earned)
+- Show "Lost Loot" (what you would have gained)
+- Return to main menu
+- NO extraction currency awarded
+
+Successful Extraction:
+- Show extraction success screen
+- Display run statistics
+- Show earned extraction currency
+- Show quest completions
+- Show new unlocks (if any)
+- Return to main menu with rewards saved
+
+================================================================================
+PHASE 4: MOBILE UI/UX (Week 8-9)
+================================================================================
+
+4.1 Touch Controls
+------------------
+Layout:
+- Virtual Joystick (bottom-left corner)
+  * Semi-transparent
+  * Dynamic (appears where thumb touches)
+  * Returns to center when released
+- Extraction Button (center-bottom)
+  * Only visible when near extraction zone
+  * Large, finger-friendly size
+- Pause Button (top-right corner)
+
+Alternative Control Scheme:
+- Tap-to-move option in settings
+- Player moves to tapped location
+- Double-tap to dash (if implemented)
+
+Control Settings:
+- Joystick size adjustment
+- Joystick opacity adjustment
+- Left/right hand mode
+- Haptic feedback toggle
+
+4.2 HUD (Heads-Up Display)
+--------------------------
+Top Bar:
+- Health Bar (left)
+  * Current HP / Max HP
+  * Color changes (green > yellow > red)
+- XP Bar (center)
+  * Progress to next level
+  * Level number displayed
+- Timer (right)
+  * Shows time survived in run
+  * Changes color near extraction times
+
+Bottom Bar:
+- Active Weapons Display (left side)
+  * Icons of equipped weapons
+  * Cooldown indicators
+- Gold Counter (bottom-left)
+- Mini-map (bottom-right)
+  * Shows player position
+  * Shows extraction zones when active
+  * Shows nearby enemies (optional)
+
+Other HUD Elements:
+- Damage numbers (float up from enemies)
+- XP pickup notifications
+- Level up notification
+- Combo counter (optional)
+- Kill counter
+
+4.3 Menu Screens
+----------------
+Main Menu:
+- Play button (character selection)
+- Collections (unlocks, characters, weapons)
+- Progression (meta-upgrades, quests)
+- Settings
+- Quit
+
+Character Selection:
+- Grid of unlocked characters
+- Character stats display
+- Starting weapon/ability shown
+- Lock icons for locked characters
+- "Select" button
+
+Upgrade Selection Screen (During Run):
+- Pause game
+- Display 3-4 upgrade cards
+- Each card shows:
+  * Upgrade icon
+  * Upgrade name
+  * Description
+  * Rarity color border
+- Tap to select
+- Resume game after selection
+
+Pause Menu (During Run):
+- Resume
+- Settings
+- Abandon Run (warning: lose all loot)
+
+End Run Screen:
+- Success or Failure message
+- Statistics:
+  * Time survived
+  * Enemies killed
+  * Gold collected
+  * XP gained
+- Rewards (if extracted):
+  * Extraction currency earned
+  * Quests completed
+  * New unlocks
+- Continue button (back to main menu)
+
+4.4 Mobile Optimization
+-----------------------
+UI Considerations:
+- Minimum touch target: 44x44 dp (iOS), 48x48 dp (Android)
+- High contrast for outdoor visibility
+- Clear typography (readable on small screens)
+- Minimal text, icon-focused
+- Tutorial/tooltips for first-time players
+- Safe area handling for notched screens
+
+Performance UI:
+- FPS counter (debug mode)
+- Graphics quality presets (Low, Medium, High)
+- Battery saver mode option
+
+================================================================================
+PHASE 5: PROGRESSION SYSTEMS (Week 10-11)
+================================================================================
+
+5.1 Meta-Progression (Persistent Between Runs)
+-----------------------------------------------
+Extraction Currency System:
+- Currency Name: "Essence" (or choose your own)
+- Earned only from successful extractions
+- Amount based on:
+  * Time survived
+  * Enemies killed
+  * Extraction multiplier
+  * Challenges completed
+
+Unlockables:
+1. Characters (10-15 total):
+   - Starting character: Free
+   - Others: Unlock with Essence or quests
+   - Each has unique passive ability and stats
+
+2. Weapons (20+ total):
+   - Start with 5 weapons available
+   - Unlock more to add to drop pool
+   - Some weapons unlock via quests
+
+3. Upgrades (50+ total):
+   - Tomes, passive items
+   - Unlock to add to upgrade pool
+
+4. Maps (3-5 total):
+   - Starting map: Free
+   - Others: Unlock with Essence or quests
+
+5. Cosmetics (optional):
+   - Character skins
+   - Weapon skins
+   - Visual effects
+
+Account Level System:
+- Overall progression tracker
+- Gain account XP from all runs (even failed ones)
+- Each account level grants small permanent bonuses
+- Milestones unlock special rewards
+
+Quest System:
+- 100-200 total quests
+- Types:
+  * Kill X enemies
+  * Survive X minutes
+  * Extract successfully X times
+  * Use specific weapon to kill enemies
+  * Complete run with specific character
+- Rewards: Essence, unlocks, account XP
+
+5.2 Run Progression (Lost on Death)
+------------------------------------
+Gold:
+- Dropped by enemies during run
+- Used for:
+  * Mid-run shops (buy items, rerolls)
+  * Shrines (temporary buffs)
+- Lost if you die
+
+Temporary Power-ups:
+- Shrines on map grant temporary buffs
+  * Damage boost (lasts 60 seconds)
+  * Speed boost
+  * Invincibility (short duration)
+- Cost gold to activate
+
+Shops:
+- Appear on map or at fixed locations
+- Sell:
+  * Specific weapons
+  * Health restores
+  * Reroll tokens (reroll upgrade choices)
+  * Gold bonuses
+
+Build Stacking:
+- Weapon upgrades stack
+  * Bonk weapon can be upgraded 5+ times
+  * Each upgrade increases damage, size, speed
+- Synergies discovered through combinations
+  * Fire weapon + Ice weapon = Steam explosion
+  * Lightning + Water = Chain lightning
+
+5.3 Save System
+---------------
+What to Save:
+- Unlocked characters
+- Unlocked weapons
+- Unlocked upgrades
+- Unlocked maps
+- Extraction currency balance
+- Account level and XP
+- Quest progress
+- Statistics (total kills, total extractions, etc.)
+- Settings
+
+Save Location:
+- Mobile: user://save_data.json
+- Encrypted for basic cheat prevention
+- Cloud save support (optional, advanced)
+
+================================================================================
+PHASE 6: CONTENT CREATION (Week 12-14)
+================================================================================
+
+6.1 Maps (3D Environments)
+---------------------------
+Map Requirements:
+- 3D terrain with verticality
+- NavMesh baked for enemy pathfinding
+- Strategic cover and obstacles
+- Multiple elevation levels
+- Clear boundaries (invisible walls or natural barriers)
+
+Map 1: Open Field Arena
+- Mostly flat terrain
+- Few obstacles (rocks, trees)
+- Good for beginners
+- Easy navigation
+
+Map 2: Ruined City
+- Multiple elevation levels
+- Building ruins for cover
+- Narrow streets and open plazas
+- Medium difficulty
+
+Map 3: Forest Maze
+- Dense trees
+- Winding paths
+- Low visibility
+- High difficulty
+
+Map Features:
+- Shrines: Interactable objects for temporary buffs
+  * Health Shrine: Restore 50% HP (costs gold)
+  * Damage Shrine: +50% damage for 60s (costs gold)
+  * Speed Shrine: +30% speed for 60s (costs gold)
+
+- Shops: Fixed locations on map
+  * NPC or kiosk model
+  * UI overlay when approached
+
+- Destructibles: Breakable objects
+  * Crates, barrels, rocks
+  * Drop gold, health, or XP
+
+- Extraction Zones:
+  * 2-3 predetermined spawn points per map
+  * Rotate which one activates each cycle
+
+6.2 Characters (10-15 Total)
+-----------------------------
+Each character needs:
+- Unique 3D model (or variations)
+- Unique passive ability
+- Different starting stats
+- Starting weapon
+
+Example Characters:
+
+1. Warrior (Starting Character)
+   - Passive: +20% melee damage
+   - Stats: High HP, medium speed
+   - Starting: Bonk hammer
+
+2. Ranger
+   - Passive: +30% projectile range
+   - Stats: Medium HP, high speed
+   - Starting: Auto-bow
+
+3. Tank
+   - Passive: +50% HP, -10% speed
+   - Stats: Very high HP, low speed
+   - Starting: Shield bash
+
+4. Mage
+   - Passive: +1 projectile count on all weapons
+   - Stats: Low HP, medium speed
+   - Starting: Magic missile
+
+5. Assassin
+   - Passive: +25% critical hit chance
+   - Stats: Low HP, very high speed
+   - Starting: Dual daggers
+
+[Continue with 5-10 more unique characters]
+
+6.3 Weapons (20+ Total)
+-----------------------
+Weapon Categories:
+
+ORBIT WEAPONS (Circle the player):
+1. Spinning Hammers: 3 hammers orbit, damage on contact
+2. Orbiting Blades: Fast orbit, medium damage
+3. Shield Ring: Large orbit, high damage, knockback
+
+PROJECTILE WEAPONS (Auto-fire):
+4. Magic Missile: Homing projectiles
+5. Arrow Volley: Straight-line arrows
+6. Boomerang: Returns to player
+7. Fireball: AOE on impact
+
+AOE WEAPONS (Periodic area damage):
+8. Ground Slam: Shockwave around player
+9. Lightning Strike: Random lightning bolts in radius
+10. Earthquake: Damages all grounded enemies
+
+BEAM WEAPONS (Continuous damage):
+11. Laser Beam: Sweeping laser
+12. Flame Thrower: Cone of fire
+13. Ice Beam: Slows and damages
+
+ZONE WEAPONS (Create damage zones):
+14. Fire Pool: Creates fire patches
+15. Poison Cloud: DoT gas clouds
+16. Spike Trap: Ground spikes
+
+[Continue with 4+ more weapons]
+
+Weapon Synergies Examples:
+- Fire + Ice = Steam Explosion (AOE burst)
+- Lightning + Water = Chain Lightning (jumps between enemies)
+- Earth + Wind = Sandstorm (damages and blinds)
+
+6.4 Upgrades & Items (50+ Total)
+---------------------------------
+Categories:
+
+STAT BOOSTS:
+- Increased Max HP (+20 HP)
+- Movement Speed (+10%)
+- Damage Multiplier (+15%)
+- Critical Chance (+5%)
+- Critical Damage (+50%)
+- Pickup Range (+20%)
+- Health Regeneration (+1 HP/sec)
+
+WEAPON UPGRADES:
+- Extra Projectile (+1 projectile to all projectile weapons)
+- Faster Attack Speed (+20% attack speed all weapons)
+- Piercing Shots (projectiles pierce 1 enemy)
+- Bouncing Projectiles (bounce once)
+- Bigger AOE (+30% area size)
+
+PASSIVE ABILITIES:
+- Lifesteal (5% damage healed)
+- Thorns (reflect 10% damage)
+- Lucky Coin (enemies drop more gold)
+- Second Wind (revive once per run at 50% HP)
+- Magnet (increased pickup range)
+- XP Boost (+20% XP gained)
+
+SPECIAL ITEMS:
+- Multicast (20% chance to cast weapons twice)
+- Cooldown Reduction (-15% cooldown all weapons)
+- Last Stand (invincible for 3s when HP drops to 0, once per run)
+- Extraction Insurance (keep 50% of loot if you die, one-time use)
+
+[Continue with more creative upgrades]
+
+================================================================================
+PHASE 7: POLISH & OPTIMIZATION (Week 15-16)
+================================================================================
+
+7.1 Mobile Performance Optimization
+------------------------------------
+Target Performance:
+- 60 FPS on mid-range devices (2-3 years old)
+- 30 FPS minimum on low-end devices
+- Battery efficient (3+ hours continuous play)
+
+Optimization Techniques:
+
+1. Level of Detail (LOD):
+   - Enemies far from player use lower poly models
+   - Use LOD nodes in Godot
+   - Reduce particle effects at distance
+
+2. Object Pooling:
+   - Pool enemies (reuse instead of instantiate/free)
+   - Pool projectiles
+   - Pool XP orbs
+   - Pool particle effects
+
+3. Occlusion Culling:
+   - Don't render objects behind walls/terrain
+   - Use OccluderInstance3D
+
+4. Navigation Optimization:
+   - Limit number of active navigation agents
+   - Update pathfinding less frequently for distant enemies
+   - Use navigation layers
+
+5. Particle Optimization:
+   - Limit max particle count
+   - Use GPU particles (GPUParticles3D) sparingly
+   - CPUParticles3D for simpler effects on mobile
+
+6. Draw Call Reduction:
+   - Batch similar materials
+   - Use atlased textures
+   - Minimize unique materials
+
+7. Graphics Settings:
+   - Quality presets: Low, Medium, High
+   - Low: Reduced shadows, no post-processing, lower resolution
+   - Medium: Basic shadows, some effects
+   - High: Full shadows, all effects (for flagship devices)
+
+8. Memory Management:
+   - Compress textures (VRAM usage)
+   - Stream audio files
+   - Unload unused assets
+
+Testing on Devices:
+- Test on actual Android devices (various manufacturers)
+- Test on iOS devices (if possible)
+- Use Godot's remote debug on device
+- Profile frame time and memory usage
+
+7.2 Juice & Game Feel
+----------------------
+Screen Effects:
+- Screen shake on:
+  * Taking damage (mild shake)
+  * Killing enemies (very subtle)
+  * Boss attacks (strong shake)
+  * Extraction success (victory shake)
+
+Particle Effects:
+- Blood/hit particles when damaging enemies
+- Explosion particles on enemy death
+- XP orb collection sparkles
+- Level up burst effect
+- Extraction portal particles
+- Weapon trail effects
+
+Sound Effects:
+- Weapon attack sounds (unique per weapon type)
+- Enemy hit sounds
+- Enemy death sounds
+- XP pickup sound
+- Gold pickup sound
+- Level up sound
+- UI click sounds
+- Extraction countdown beeps
+- Ambient environmental sounds
+
+Music:
+- Main menu music (calm, inviting)
+- Gameplay music (intense, driving beat)
+- Music intensity increases as time progresses
+- Boss music (epic, threatening)
+- Victory music (triumphant)
+- Defeat music (somber)
+
+Hit-Stop / Freeze Frames:
+- Brief pause (0.05-0.1s) on critical hits
+- Emphasizes impact
+- Optional toggle in settings (some players dislike)
+
+Visual Feedback:
+- Damage numbers float up from enemies
+  * Regular damage: White
+  * Critical hits: Yellow/Red, larger
+- Enemy flash red when hit
+- Player flash red when damaged
+- Gold/XP fly toward player when collected
+- Level up glow effect on player
+- Combo counter increases visibility when stacking
+
+Haptic Feedback (Mobile):
+- Light vibration on taking damage
+- Vibration on killing enemies
+- Strong vibration on level up
+- Toggle in settings
+
+7.3 Balance & Tuning
+--------------------
+Difficulty Curve:
+- First 2 minutes: Easy, few enemies
+- 3-5 minutes: Moderate, introduce tougher enemies
+- 6-8 minutes: Hard, many enemies, mini-bosses
+- 9-10 minutes: Intense, screen full of enemies
+- 10+ minutes: "Hell mode" for those who stay
+
+Weapon Balance:
+- No weapon should be mandatory
+- All weapons viable for full run
+- Synergies encouraged but not required
+- Test each weapon individually
+- Gather playtest feedback
+
+Upgrade Balance:
+- Common upgrades: Small, consistent bonuses
+- Rare upgrades: Noticeable power spikes
+- Epic upgrades: Build-defining
+- Legendary upgrades: Run-winning (but rare)
+
+Economy Tuning:
+- Gold drops: Enough to use shops 2-3 times per run
+- XP curve: Level up every 30-60 seconds early game
+- XP curve: Levels slow down but enemies drop more XP
+- Extraction currency: 5-10 runs to unlock new character
+- Extraction currency: 2-3 runs to unlock new weapon
+
+Player Testing:
+- Internal testing (you and team)
+- Beta testing with small group
+- Gather feedback on:
+  * Difficulty (too hard/easy?)
+  * Progression pace (grindy or too fast?)
+  * Weapon/character favorites
+  * Bugs and crashes
+  * UI/UX issues
+  * Control responsiveness
+
+================================================================================
+PHASE 8: TESTING & RELEASE (Week 17-18)
+================================================================================
+
+8.1 Testing Phases
+------------------
+Alpha Testing (Internal):
+- Core gameplay loop functional
+- Major features implemented
+- Known bugs documented
+- Test on development devices
+
+Beta Testing (Closed):
+- Invite 10-50 testers
+- Provide feedback form
+- Focus on:
+  * Game balance
+  * Progression pacing
+  * Bugs and crashes
+  * Performance on various devices
+  * Monetization feedback (if applicable)
+
+Bug Fixing Priority:
+1. Critical: Crashes, game-breaking bugs
+2. High: Exploits, major balance issues
+3. Medium: Visual bugs, minor gameplay issues
+4. Low: Polish items, nice-to-haves
+
+8.2 Platform-Specific Testing
+------------------------------
+Android Testing:
+- Test on multiple Android versions (10, 11, 12, 13, 14+)
+- Test on different manufacturers (Samsung, Google, OnePlus, etc.)
+- Test on different screen sizes and resolutions
+- Test on different performance tiers
+- Check Play Store policy compliance
+
+iOS Testing:
+- Test on multiple iOS versions (15, 16, 17+)
+- Test on different devices (iPhone SE, iPhone 14, iPhone 15, iPad)
+- TestFlight beta distribution
+- Check App Store guidelines compliance
+- Ensure privacy manifest is correct
+
+Common Mobile Issues to Test:
+- Battery drain
+- Overheating
+- Notifications/interruptions (phone calls, messages)
+- App backgrounding/foregrounding
+- Save data persistence
+- Permissions (storage, notifications)
+- In-app purchases (if applicable)
+
+8.3 Store Preparation
+---------------------
+App Store (iOS):
+- App name (unique, searchable)
+- App icon (1024x1024 PNG)
+- Screenshots (6.5", 5.5", 12.9" sizes)
+- App preview video (optional but recommended)
+- Description (up to 4000 characters)
+- Keywords (100 character limit, comma-separated)
+- Privacy policy URL
+- Support URL
+- Categories (Primary: Games, Secondary: Action/Strategy)
+- Age rating (questionnaire)
+- In-app purchases configuration (if any)
+
+Google Play Store (Android):
+- App name
+- Icon (512x512 PNG)
+- Feature graphic (1024x500)
+- Screenshots (phone, tablet, 7" tablet, 10" tablet)
+- Promo video (YouTube URL, optional)
+- Short description (80 characters)
+- Full description (4000 characters)
+- Privacy policy URL
+- Categories (Application type: Game, Category: Action/Arcade/Strategy)
+- Content rating (questionnaire)
+- In-app purchases/ads disclosure
+- Target audience
+
+Marketing Assets:
+- Gameplay trailer (30-60 seconds)
+- Promotional images
+- Press kit (for media/influencers)
+- Social media assets
+
+8.4 Monetization Strategy (Optional)
+-------------------------------------
+Choose one or combination:
+
+1. Premium (Paid):
+   - One-time purchase ($2.99 - $9.99)
+   - No ads, no IAP
+   - All content unlocked through gameplay
+
+2. Free-to-Play + Ads:
+   - Free download
+   - Optional rewarded video ads
+     * Watch ad for extra Essence
+     * Watch ad for revive (once per run)
+     * Watch ad for free shop item
+   - Interstitial ads (after run ends)
+   - Ad-free IAP ($4.99)
+
+3. Free-to-Play + IAP:
+   - Free download
+   - Sell Essence currency
+   - Sell character unlocks
+   - Sell starter packs
+   - Sell cosmetics
+   - Battle pass / season pass
+
+4. Hybrid:
+   - Free-to-Play
+   - Optional ads AND IAP
+   - Premium currency (bought with $$$)
+   - Free currency (earned in-game)
+   - Cosmetics only available for $$$ (ethical)
+
+Recommended for Indie Game:
+- Free-to-Play + Optional Rewarded Ads
+- Allow all content unlockable through gameplay
+- Ads only speed up progression (not required)
+- Optional $4.99 "Remove Ads + Bonus" purchase
+
+8.5 Post-Launch
+---------------
+Analytics (Optional):
+- Track player retention (Day 1, Day 7, Day 30)
+- Track session length
+- Track which characters/weapons are popular
+- Track where players die most
+- Track progression bottlenecks
+- Use: Unity Analytics, GameAnalytics, or Firebase
+
+Updates & Content:
+- Bug fix patches (high priority)
+- Balance updates based on data
+- New characters (every 1-2 months)
+- New weapons (every month)
+- New maps (every 2-3 months)
+- Seasonal events (holiday themes)
+- Community engagement (Discord, Reddit)
+
+Support:
+- Email support for bugs/issues
+- FAQ page
+- Community Discord server
+- Regular communication with players
+
+Marketing:
+- Post on Reddit (r/AndroidGaming, r/iosgaming, r/roguelites)
+- Reach out to mobile game YouTubers/streamers
+- Submit to mobile game review sites
+- Use social media (Twitter/X, TikTok clips)
+- Update store assets based on feedback
+
+================================================================================
+MVP (MINIMUM VIABLE PRODUCT) SCOPE
+================================================================================
+
+To get a playable prototype in 4-6 weeks, focus on:
+
+Core Features (Must Have):
+1. One playable character
+2. One map (simple arena)
+3. 5 unique weapons
+4. 10-15 upgrade options
+5. 3 enemy types (basic, fast, tank)
+6. Basic wave spawning (escalating difficulty)
+7. Extraction system (one extraction point per run)
+8. Meta-progression (unlock 2-3 additional weapons)
+9. Mobile touch controls (virtual joystick)
+10. Basic UI (HUD, upgrade screen, main menu)
+11. XP and leveling system
+12. Death screen and extraction success screen
+
+Nice to Have (Post-MVP):
+- Multiple characters
+- Multiple maps
+- Boss enemies
+- Shops and shrines
+- Quest system
+- Advanced synergies
+- Cosmetics
+- Extensive balancing
+- Polish and juice
+
+MVP Development Order:
+Week 1: Project setup, player movement, camera
+Week 2: Enemy spawning, basic combat, XP system
+Week 3: Weapons (2-3 working), upgrades, leveling
+Week 4: Extraction system, meta-progression
+Week 5: UI/UX, mobile controls
+Week 6: Testing, balance, bug fixes
+
+================================================================================
+TECHNICAL STACK SUMMARY
+================================================================================
+
+Godot 4.3+ Features:
+- CharacterBody3D: Player and enemy controllers
+- NavigationAgent3D / NavigationRegion3D: Enemy pathfinding
+- Area3D: Detection zones, extraction zones, weapon hitboxes
+- GPUParticles3D / CPUParticles3D: Visual effects
+- AudioStreamPlayer3D: Spatial audio for enemies/impacts
+- AudioStreamPlayer: UI sounds and music
+- Control nodes: UI (Button, Label, TextureRect, etc.)
+- Resource scripts: Data-driven design for weapons/upgrades/characters
+- Autoload singletons: Game managers
+- Signals: Event-driven architecture
+- Save/Load: FileAccess API with JSON
+- Mobile export: Android (ARM64), iOS (ARM64)
+
+GDScript Best Practices:
+- Use static typing (var health: float = 100.0)
+- Organize code with classes and inheritance
+- Use composition over inheritance where appropriate
+- Comment complex logic
+- Use signals for decoupling
+- Avoid circular dependencies
+- Profile and optimize hot paths
+
+Version Control:
+- Use Git for source control
+- GitHub/GitLab for remote repository
+- .gitignore for Godot (.import/, .godot/, etc.)
+- Commit frequently with clear messages
+- Branch for major features
+
+================================================================================
+RESOURCES & REFERENCES
+================================================================================
+
+Learning Godot:
+- Official Godot Docs: https://docs.godotengine.org/
+- Godot Tutorials (YouTube): GDQuest, Brackeys, HeartBeast
+- Mobile export guides: Godot official documentation
+
+Game Design References:
+- Vampire Survivors (Steam)
+- Megabonk (Steam)
+- Risk of Rain 2 (for 3D perspective and feel)
+- Brotato (for roguelite mobile game reference)
+
+Asset Resources (Placeholder/Prototype):
+- Kenney.nl (free game assets)
+- Mixamo (free character animations)
+- Freesound.org (free sound effects)
+- OpenGameArt.org
+- Godot Asset Library
+
+Community:
+- Godot Discord
+- Reddit: r/godot, r/gamedev, r/roguelites
+- Godot Forums
+
+Tools:
+- Blender (3D modeling, free)
+- GIMP/Photoshop (2D art)
+- Audacity (audio editing)
+- Trello/Notion (project management)
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+Immediate Actions:
+1. Install Godot 4.3 or later
+2. Set up Android/iOS export templates
+3. Create project folder structure
+4. Set up Git repository
+5. Create core singleton scripts (GameManager, etc.)
+6. Start MVP development (player movement first)
+
+Questions to Answer:
+- Do you have Godot installed already?
+- Do you have 3D modeling/art pipeline, or using placeholders?
+- Solo developer or team?
+- Any specific timeline or deadline?
+- Monetization preference?
+- Target devices (flagship vs budget)?
+
+Development Philosophy:
+- Prototype fast, polish later
+- Playtest early and often
+- Focus on feel and fun first
+- Iterate based on feedback
+- Scope creep is the enemy (stick to MVP first)
+
+Remember: It's better to have a small, polished game than a large, broken one.
+Start with MVP, get it fun, then expand!
+
+================================================================================
+END OF GAME DEVELOPMENT PLAN
+================================================================================

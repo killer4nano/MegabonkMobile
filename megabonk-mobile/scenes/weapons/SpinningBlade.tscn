@@ -1,0 +1,50 @@
+[gd_scene load_steps=5 format=3 uid="uid://k3oipfoix1e"]
+
+[ext_resource type="Script" path="res://scripts/weapons/SpinningBlade.gd" id="1_spinning_blade"]
+[ext_resource type="Resource" uid="uid://cvn5yk8m9qts3" path="res://resources/weapons/SpinningBladeData.tres" id="2_spinning_blade_data"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_blade"]
+top_radius = 0.6
+bottom_radius = 0.6
+height = 0.1
+
+[sub_resource type="SphereShape3D" id="SphereShape_blade"]
+radius = 0.7
+
+[node name="SpinningBlade" type="Node3D"]
+script = ExtResource("1_spinning_blade")
+weapon_data = ExtResource("2_spinning_blade_data")
+damage = 12.0
+attack_cooldown = 0.3
+orbit_radius = 2.5
+orbit_speed = 3.0
+spin_speed = 8.0
+
+[node name="BladeVisual" type="Node3D" parent="."]
+
+[node name="Disc" type="MeshInstance3D" parent="BladeVisual"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
+mesh = SubResource("CylinderMesh_blade")
+
+[node name="Edge1" type="CSGBox3D" parent="BladeVisual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0, 0)
+size = Vector3(0.4, 0.15, 0.15)
+
+[node name="Edge2" type="CSGBox3D" parent="BladeVisual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 0, 0)
+size = Vector3(0.4, 0.15, 0.15)
+
+[node name="Edge3" type="CSGBox3D" parent="BladeVisual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.5)
+size = Vector3(0.15, 0.15, 0.4)
+
+[node name="Edge4" type="CSGBox3D" parent="BladeVisual"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.5)
+size = Vector3(0.15, 0.15, 0.4)
+
+[node name="AttackRange" type="Area3D" parent="."]
+collision_layer = 4
+collision_mask = 2
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AttackRange"]
+shape = SubResource("SphereShape_blade")

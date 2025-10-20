@@ -1,0 +1,20 @@
+[gd_scene load_steps=4 format=3 uid="uid://boomerang_projectile_001"]
+
+[ext_resource type="Script" path="res://scripts/weapons/BoomerangProjectile.gd" id="1_boomerang_proj"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_boomerang"]
+size = Vector3(0.6, 0.1, 0.2)
+
+[sub_resource type="BoxShape3D" id="BoxShape_boomerang"]
+size = Vector3(0.6, 0.1, 0.2)
+
+[node name="BoomerangProjectile" type="Area3D" groups=["projectile"]]
+collision_layer = 0
+collision_mask = 2
+script = ExtResource("1_boomerang_proj")
+
+[node name="Visual" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_boomerang")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape_boomerang")

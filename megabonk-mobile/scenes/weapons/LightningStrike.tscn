@@ -1,0 +1,30 @@
+[gd_scene load_steps=5 format=3 uid="uid://lightning_strike_001"]
+
+[ext_resource type="Script" path="res://scripts/weapons/LightningStrike.gd" id="1_lightning"]
+[ext_resource type="Script" path="res://resources/weapons/WeaponData.gd" id="2_weapondata"]
+
+[sub_resource type="Resource" id="Resource_lightning_data"]
+script = ExtResource("2_weapondata")
+weapon_name = "Lightning Strike"
+weapon_description = "Call down lightning that chains between enemies!"
+base_damage = 40.0
+attack_cooldown = 3.0
+attack_range = 8.0
+projectile_count = 1
+level = 1
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_lightning_visual"]
+top_radius = 0.1
+bottom_radius = 0.15
+height = 0.5
+
+[node name="LightningStrike" type="Node3D"]
+script = ExtResource("1_lightning")
+weapon_data = SubResource("Resource_lightning_data")
+weapon_type = "ranged"
+chain_count = 3
+chain_range = 5.0
+chain_damage_falloff = 0.7
+
+[node name="Visual" type="MeshInstance3D" parent="."]
+mesh = SubResource("CylinderMesh_lightning_visual")

@@ -1,0 +1,44 @@
+[gd_scene load_steps=6 format=3 uid="uid://shield_ring_001"]
+
+[ext_resource type="Script" path="res://scripts/weapons/ShieldRing.gd" id="1_shield"]
+[ext_resource type="Script" path="res://resources/weapons/WeaponData.gd" id="2_weapondata"]
+
+[sub_resource type="Resource" id="Resource_shield_data"]
+script = ExtResource("2_weapondata")
+weapon_name = "Shield Ring"
+weapon_description = "A large orbiting shield that damages enemies and blocks projectiles!"
+base_damage = 35.0
+attack_cooldown = 1.0
+attack_range = 3.0
+projectile_count = 1
+level = 1
+
+[sub_resource type="TorusMesh" id="TorusMesh_shield"]
+inner_radius = 0.4
+outer_radius = 0.6
+
+[sub_resource type="SphereShape3D" id="SphereShape_shield"]
+radius = 0.6
+
+[node name="ShieldRing" type="Node3D"]
+script = ExtResource("1_shield")
+weapon_data = SubResource("Resource_shield_data")
+weapon_type = "orbital"
+orbit_radius = 3.0
+orbit_speed = 1.5
+blocks_projectiles = true
+
+[node name="ShieldVisual" type="Node3D" parent="."]
+
+[node name="Ring" type="MeshInstance3D" parent="ShieldVisual"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
+mesh = SubResource("TorusMesh_shield")
+
+[node name="AttackRange" type="Area3D" parent="."]
+monitoring = true
+monitorable = false
+collision_layer = 0
+collision_mask = 2
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AttackRange"]
+shape = SubResource("SphereShape_shield")

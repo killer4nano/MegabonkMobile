@@ -1,0 +1,28 @@
+[gd_scene load_steps=5 format=3 uid="uid://boomerang_weapon_001"]
+
+[ext_resource type="Script" path="res://scripts/weapons/Boomerang.gd" id="1_boomerang"]
+[ext_resource type="Script" path="res://resources/weapons/WeaponData.gd" id="2_weapondata"]
+
+[sub_resource type="Resource" id="Resource_boomerang_data"]
+script = ExtResource("2_weapondata")
+weapon_name = "Boomerang"
+weapon_description = "Throw a boomerang that hits enemies twice - on the way out and back!"
+base_damage = 20.0
+attack_cooldown = 2.0
+attack_range = 8.0
+projectile_count = 1
+level = 1
+
+[sub_resource type="BoxMesh" id="BoxMesh_boomerang_visual"]
+size = Vector3(0.3, 0.1, 0.15)
+
+[node name="Boomerang" type="Node3D"]
+script = ExtResource("1_boomerang")
+weapon_data = SubResource("Resource_boomerang_data")
+weapon_type = "ranged"
+throw_speed = 15.0
+max_distance = 8.0
+return_speed_multiplier = 1.2
+
+[node name="Visual" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_boomerang_visual")

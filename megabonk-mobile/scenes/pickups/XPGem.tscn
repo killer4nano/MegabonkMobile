@@ -1,0 +1,31 @@
+[gd_scene load_steps=5 format=3 uid="uid://cm8xw7y5qvp0b"]
+
+[ext_resource type="Script" path="res://scripts/pickups/XPGem.gd" id="1_xpgem"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_xpgem"]
+radius = 0.25
+height = 0.5
+radial_segments = 16
+rings = 8
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_xpgem"]
+albedo_color = Color(0.2, 0.6, 1, 1)
+emission_enabled = true
+emission = Color(0.4, 0.8, 1, 1)
+emission_energy_multiplier = 2.0
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_xpgem"]
+radius = 0.3
+
+[node name="XPGem" type="Area3D"]
+collision_layer = 4
+collision_mask = 1
+script = ExtResource("1_xpgem")
+xp_value = 10.0
+
+[node name="GemVisual" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_xpgem")
+surface_material_override/0 = SubResource("StandardMaterial3D_xpgem")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_xpgem")
