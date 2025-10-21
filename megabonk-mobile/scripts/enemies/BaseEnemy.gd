@@ -947,19 +947,25 @@ func handle_climbing_and_gravity(delta: float) -> void:
 				velocity.y = 0
 
 func _set_climbing_visual(climbing: bool) -> void:
-	"""Visual feedback for climbing state"""
-	var body = get_node_or_null("Body")
-	if body and body is MeshInstance3D:
-		var mat = body.get_surface_override_material(0)
-		if mat:
-			if climbing:
-				# Make enemy blue when climbing
-				mat.albedo_color = Color(0.2, 0.2, 0.8, 1.0)
-			else:
-				# Reset to original color based on enemy type
-				if self.name.contains("Fast"):
-					mat.albedo_color = Color.YELLOW
-				elif self.name.contains("Tank"):
-					mat.albedo_color = Color.PURPLE
-				else:
-					mat.albedo_color = Color.RED
+	"""Visual feedback for climbing state - DISABLED per user request"""
+	# User requested: No color change when climbing
+	# Climbing functionality still works, just no visual feedback
+	# Date: 2025-10-21
+	pass
+
+	# ORIGINAL CODE (disabled):
+	# var body = get_node_or_null("Body")
+	# if body and body is MeshInstance3D:
+	# 	var mat = body.get_surface_override_material(0)
+	# 	if mat:
+	# 		if climbing:
+	# 			# Make enemy blue when climbing
+	# 			mat.albedo_color = Color(0.2, 0.2, 0.8, 1.0)
+	# 		else:
+	# 			# Reset to original color based on enemy type
+	# 			if self.name.contains("Fast"):
+	# 				mat.albedo_color = Color.YELLOW
+	# 			elif self.name.contains("Tank"):
+	# 				mat.albedo_color = Color.PURPLE
+	# 			else:
+	# 				mat.albedo_color = Color.RED

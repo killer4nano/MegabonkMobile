@@ -39,3 +39,6 @@ PM_SYSTEM_COMPLETE.md
 PM_SYSTEM_QUICK_START.md
 GITHUB_SETUP.md
 archive/
+
+# Claude Code internal files
+.claude/

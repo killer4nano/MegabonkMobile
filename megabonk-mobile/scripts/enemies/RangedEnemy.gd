@@ -7,12 +7,12 @@ const PROJECTILE_SCENE = preload("res://scenes/enemies/EnemyProjectile.tscn")
 
 @export var projectile_damage: float = 8.0
 @export var projectile_speed: float = 7.0  # Reduced from 10.0 for dodgeability
-@export var attack_cooldown: float = 2.0
+# Note: attack_cooldown inherited from BaseEnemy (set in _ready)
 @export var shoot_range: float = 8.0
 @export var charge_time: float = 0.8  # Telegraph windup time before firing
 
 # State tracking
-var attack_timer: float = 0.0
+# Note: attack_timer inherited from BaseEnemy
 var can_shoot: bool = true
 
 # BUG FIX: TASK-014 - Repositioning when line of sight blocked
@@ -39,6 +39,7 @@ func _ready() -> void:
 	xp_value = 15.0
 	gold_value = 3
 	attack_range = shoot_range
+	attack_cooldown = 2.0  # Override base cooldown (base is 1.0s)
 
 	# BUG FIX: TASK-004 - Create visual charge indicator
 	# Shows glowing sphere during 0.8s attack windup for dodging

@@ -97,7 +97,7 @@ func stop_waves() -> void:
 
 ## Spawn a specific enemy type at a random spawn point
 func spawn_enemy(enemy_scene_path: String) -> void:
-	print("Wave ", current_wave, " - Spawning enemy type: ", enemy_scene_path)
+	var spawn_pos = get_random_spawn_position()
 
 	var enemy_scene = load(enemy_scene_path)
 	if not enemy_scene:
@@ -105,11 +105,14 @@ func spawn_enemy(enemy_scene_path: String) -> void:
 		return
 
 	var enemy = enemy_scene.instantiate()
-	var spawn_pos = get_random_spawn_position()
 
-	# Add enemy to the scene
+	# BUG FIX: Set position property BEFORE adding to tree
+	# Reason: BaseEnemy._ready() uses global_position, so position must be set first
+	# Date: 2025-10-21
+	enemy.position = spawn_pos
+
+	# Add enemy to the scene (this triggers _ready())
 	get_tree().current_scene.add_child(enemy)
-	enemy.global_position = spawn_pos
 
 	enemy_spawned.emit(enemy)
 	enemies_spawned_this_wave += 1
@@ -126,16 +129,24 @@ func get_random_spawn_position() -> Vector3:
 		if spawn_pos != Vector3.ZERO:
 			return spawn_pos
 
-	# Fallback: Use circular spawn pattern (for static maps)
+	# BUG FIX: Spawn relative to player position, not world origin
+	# This ensures enemies always spawn at arena_radius distance from player
+	# Date: 2025-10-21
+	var player = get_tree().get_first_node_in_group("player")
+	var center_point = Vector3.ZERO
+
+	if player:
+		center_point = player.global_position
+	else:
+		push_warning("WaveManager: No player found! Spawning relative to world origin")
+
 	# Random angle around the circle
 	var angle = randf() * TAU  # TAU = 2 * PI
 
-	# Calculate position using sin/cos
-	var x = cos(angle) * arena_radius
-	var z = sin(angle) * arena_radius
-
-	# Y position at ground level
-	var y = 0.0
+	# Calculate position using sin/cos, relative to center_point (player or origin)
+	var x = center_point.x + (cos(angle) * arena_radius)
+	var z = center_point.z + (sin(angle) * arena_radius)
+	var y = center_point.y
 
 	return Vector3(x, y, z)
 
